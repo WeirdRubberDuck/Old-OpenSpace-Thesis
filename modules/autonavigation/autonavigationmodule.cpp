@@ -27,14 +27,13 @@
 #include <modules/autonavigation/autonavigationmodule_lua.inl>
 #include <openspace/engine/globalscallbacks.h>
 #include <ghoul/logging/logmanager.h> 
-#include <memory>
 
 namespace openspace {
 
 AutoNavigationModule::AutoNavigationModule() : OpenSpaceModule(Name) {}
 
 autonavigation::AutoNavigationHandler AutoNavigationModule::AutoNavigationHandler() {
-    return _autoNavgationHandler;
+    return _autoNavigationHandler;
 }
 
 std::vector<documentation::Documentation> AutoNavigationModule::documentations() const {
