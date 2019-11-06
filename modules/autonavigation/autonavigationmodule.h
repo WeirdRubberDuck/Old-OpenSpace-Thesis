@@ -28,6 +28,7 @@
 #include <openspace/util/openspacemodule.h>
 
 #include <openspace/documentation/documentation.h>
+#include <modules/autonavigation/autonavigationhandler.h>
 
 namespace openspace {
 
@@ -38,11 +39,15 @@ public:
     AutoNavigationModule();
     virtual ~AutoNavigationModule() = default;
 
+    autonavigation::AutoNavigationHandler AutoNavigationHandler();
+
     std::vector<documentation::Documentation> documentations() const override;
     scripting::LuaLibrary luaLibrary() const override;
 
 private:
     void internalInitialize(const ghoul::Dictionary&) override;
+
+    autonavigation::AutoNavigationHandler _autoNavigationHandler;
 };
 
 } // namespace openspace

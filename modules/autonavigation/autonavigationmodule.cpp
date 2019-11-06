@@ -23,14 +23,18 @@
  ****************************************************************************************/
 
 #include <modules/autonavigation/autonavigationmodule.h>
+
 #include <modules/autonavigation/autonavigationmodule_lua.inl>
+#include <openspace/engine/globalscallbacks.h>
+#include <ghoul/logging/logmanager.h> 
+#include <memory>
 
 namespace openspace {
 
 AutoNavigationModule::AutoNavigationModule() : OpenSpaceModule(Name) {}
 
-void AutoNavigationModule::internalInitialize(const ghoul::Dictionary&) {
-    // TODO: register other classes that is used in this module
+autonavigation::AutoNavigationHandler AutoNavigationModule::AutoNavigationHandler() {
+    return _autoNavgationHandler;
 }
 
 std::vector<documentation::Documentation> AutoNavigationModule::documentations() const {
@@ -49,10 +53,25 @@ scripting::LuaLibrary AutoNavigationModule::luaLibrary() const {
             &autonavigation::luascriptfunctions::testMove,
             {},
             "double, double, double",
-            "Description"
+            "Test function that moves the camera by the difference vector specified by the input x, y and z values"
+        },
+        {
+            "testAccessNavigationHandler",
+            &autonavigation::luascriptfunctions::testAccessNavigationHandler,
+            {},
+            "void",
+            "Test function to show how AutoNavigationHandler can be accessed"
         }
     };
     return res;  
+}
+
+void AutoNavigationModule::internalInitialize(const ghoul::Dictionary&) {
+    global::callback::preSync.emplace_back([this]() {
+        _autoNavigationHandler.updateCamera();
+    });
+
+    // TODO: register other classes (that are Factory created) and used in this module, if any
 }
 
 } // namespace openspace

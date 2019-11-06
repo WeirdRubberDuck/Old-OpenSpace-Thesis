@@ -22,44 +22,35 @@
  * OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                                         *
  ****************************************************************************************/
 
-#include <openspace/engine/globals.h>
-#include <openspace/engine/moduleengine.h>
-#include <openspace/interaction/navigationhandler.h>
-#include <openspace/scripting/lualibrary.h>
-#include <openspace/util/camera.h>
+#ifndef __OPENSPACE_CORE___AUTONAVIGATIONHANDLER___H__
+#define __OPENSPACE_CORE___AUTONAVIGATIONHANDLER___H__
 
-namespace openspace::autonavigation::luascriptfunctions {
+#include <openspace/properties/propertyowner.h>
 
-    // TODO: remove later when this function is not needed as an example
-    int testMove(lua_State* L) {
-        ghoul::lua::checkArgumentsAndThrow(L, 3, "lua::testMove");
+namespace openspace {
+    class Camera;
+} // namespace openspace
 
-        const double v1 = ghoul::lua::value<double>(L, 1);
-        const double v2 = ghoul::lua::value<double>(L, 2);
-        const double v3 = ghoul::lua::value<double>(L, 3);
-        glm::dvec3 diffVec{ v1, v2, v3 };
+namespace openspace::autonavigation {
 
-        Camera* camera = global::navigationHandler.camera();
-        if (!camera) return -1;
+class AutoNavigationHandler : public properties::PropertyOwner {
+public:
 
-        camera->setPositionVec3(camera->positionVec3() + diffVec);
+    AutoNavigationHandler();
+    ~AutoNavigationHandler();
 
-        lua_settop(L, 0);
-        ghoul_assert(lua_gettop(L) == 0, "Incorrect number of items left on stack");
-        return 0;
-    }
+    // Mutators
+    // ...
 
-    // TODO: remove later when this function is not needed as an example
-    int testAccessNavigationHandler(lua_State* L) {
-        ghoul::lua::checkArgumentsAndThrow(L, 0, "lua::testAccessNavigationHandler");
+    void updateCamera();
 
-        AutoNavigationModule* module = global::moduleEngine.module<AutoNavigationModule>();
-        AutoNavigationHandler handler = module->AutoNavigationHandler();
+    // Accessors
+    Camera* camera() const;
 
-        // TOOD: call a test function to see if it is working
+private:
 
-        ghoul_assert(lua_gettop(L) == 0, "Incorrect number of items left on stack");
-        return 0;
-    }
+};
 
-} // namespace openspace::autonavigation::luascriptfunctions
+} // namespace openspace::autonavigation
+
+#endif // __OPENSPACE_CORE___NAVIGATIONHANDLER___H__
