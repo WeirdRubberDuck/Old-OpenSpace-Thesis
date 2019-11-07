@@ -25,14 +25,20 @@
 #include <modules/autonavigation/autonavigationmodule.h>
 
 #include <modules/autonavigation/autonavigationmodule_lua.inl>
+#include <openspace/engine/globals.h>
 #include <openspace/engine/globalscallbacks.h>
+#include <openspace/engine/windowdelegate.h>
 #include <ghoul/logging/logmanager.h> 
+
+namespace {
+    constexpr const char* _loggerCat = "AutoNavigationModule";
+} // namespace
 
 namespace openspace {
 
 AutoNavigationModule::AutoNavigationModule() : OpenSpaceModule(Name) {}
 
-autonavigation::AutoNavigationHandler AutoNavigationModule::AutoNavigationHandler() {
+autonavigation::AutoNavigationHandler& AutoNavigationModule::AutoNavigationHandler() {
     return _autoNavigationHandler;
 }
 
@@ -46,7 +52,6 @@ scripting::LuaLibrary AutoNavigationModule::luaLibrary() const {
     scripting::LuaLibrary res;
     res.name = "autonavigation";
     res.functions = {
-        // TODO: add our scripting functions
         {
             "testMove",
             &autonavigation::luascriptfunctions::testMove,
@@ -60,6 +65,13 @@ scripting::LuaLibrary AutoNavigationModule::luaLibrary() const {
             {},
             "void",
             "Test function to show how AutoNavigationHandler can be accessed"
+        },
+        {
+            "goTo",
+            &autonavigation::luascriptfunctions::goTo,
+            {},
+            "string",
+            "TODO: Description. Go to the node with the given name."
         }
     };
     return res;  
@@ -67,7 +79,7 @@ scripting::LuaLibrary AutoNavigationModule::luaLibrary() const {
 
 void AutoNavigationModule::internalInitialize(const ghoul::Dictionary&) {
     global::callback::preSync.emplace_back([this]() {
-        _autoNavigationHandler.updateCamera();
+        _autoNavigationHandler.updateCamera(global::windowDelegate.deltaTime());
     });
 
     // TODO: register other classes (that are Factory created) and used in this module, if any

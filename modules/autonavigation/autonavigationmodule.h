@@ -39,7 +39,7 @@ public:
     AutoNavigationModule();
     virtual ~AutoNavigationModule() = default;
 
-    autonavigation::AutoNavigationHandler AutoNavigationHandler();
+    autonavigation::AutoNavigationHandler& AutoNavigationHandler();
 
     std::vector<documentation::Documentation> documentations() const override;
     scripting::LuaLibrary luaLibrary() const override;

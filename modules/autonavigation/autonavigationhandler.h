@@ -35,20 +35,41 @@ namespace openspace::autonavigation {
 
 class AutoNavigationHandler : public properties::PropertyOwner {
 public:
+    
+    struct CameraState {
+        CameraState() = default;
+        CameraState(glm::dvec3 pos, glm::dquat rot);
+
+        glm::dvec3 position;
+        //glm::dquat rotation;
+    };
+
+    struct PathSegment {
+        PathSegment() = default;
+        PathSegment(CameraState start, CameraState end);
+
+        void startInterpolation();
+
+        CameraState start;
+        CameraState end;
+        interaction::Interpolator<double> interpolator;
+    };
 
     AutoNavigationHandler();
     ~AutoNavigationHandler();
 
     // Mutators
-    // ...
-
-    void updateCamera();
+    void setPath(PathSegment ps);
 
     // Accessors
     Camera* camera() const;
 
+    void startPath();
+    void updateCamera(double deltaTime);
+
 private:
 
+    PathSegment _path; // TODO: later this will have to be some sort of list
 };
 
 } // namespace openspace::autonavigation

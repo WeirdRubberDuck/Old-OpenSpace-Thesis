@@ -25,8 +25,11 @@
 #include <openspace/engine/globals.h>
 #include <openspace/engine/moduleengine.h>
 #include <openspace/interaction/navigationhandler.h>
+#include <openspace/scene/scenegraphnode.h>
 #include <openspace/scripting/lualibrary.h>
 #include <openspace/util/camera.h>
+#include <openspace/query/query.h>
+#include <ghoul/logging/logmanager.h>
 
 namespace openspace::autonavigation::luascriptfunctions {
 
@@ -57,6 +60,38 @@ namespace openspace::autonavigation::luascriptfunctions {
         AutoNavigationHandler handler = module->AutoNavigationHandler();
 
         // TOOD: call a test function to see if it is working
+
+        ghoul_assert(lua_gettop(L) == 0, "Incorrect number of items left on stack");
+        return 0;
+    }
+
+    int goTo(lua_State* L) {
+        ghoul::lua::checkArgumentsAndThrow(L, 1, "lua::testAccessNavigationHandler");
+
+        const std::string& targetNodeName = ghoul::lua::value<std::string>(L, 1);
+        const SceneGraphNode* targetNode = sceneGraphNode(targetNodeName);
+        if (!targetNode) {
+            lua_settop(L, 0);
+            return ghoul::lua::luaError(
+                L, fmt::format("Could not find node '{}' to target", targetNodeName)
+            );
+        }
+
+        // Find target node position
+        glm::dvec3 targetPosition = targetNode->worldPosition(); 
+        // TODO: compute orientation and add move target position away from surface
+        glm::dvec3 startPosition = global::navigationHandler.camera()->positionVec3(); 
+
+        AutoNavigationModule* module = global::moduleEngine.module<AutoNavigationModule>();
+        AutoNavigationHandler& handler = module->AutoNavigationHandler();
+
+        // Generate path
+        AutoNavigationHandler::CameraState start(startPosition, glm::dquat());
+        AutoNavigationHandler::CameraState end(targetPosition, glm::dquat());
+        AutoNavigationHandler::PathSegment pathSegment(start, end);
+
+        handler.setPath(pathSegment);
+        handler.startPath();
 
         ghoul_assert(lua_gettop(L) == 0, "Incorrect number of items left on stack");
         return 0;

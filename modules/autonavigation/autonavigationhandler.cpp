@@ -25,17 +25,30 @@
 #include <modules/autonavigation/autonavigationhandler.h>
 
 #include <openspace/engine/globals.h>
+#include <openspace/interaction/interpolator.h>
 #include <openspace/interaction/navigationhandler.h>
 #include <openspace/util/camera.h>
 #include <ghoul/logging/logmanager.h>
-
+#include <glm/glm.hpp>
+#include <glm/gtx/vector_angle.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 namespace {
     constexpr const char* _loggerCat = "AutoNavigationHandler";
-
 } // namespace
 
 namespace openspace::autonavigation {
+
+AutoNavigationHandler::CameraState::CameraState(glm::dvec3 pos, glm::dquat rot)
+    : position(pos)/*, _rotation(rot) */{}
+
+AutoNavigationHandler::PathSegment::PathSegment(CameraState start, CameraState end)
+    : start(start), end(end) {}
+
+void AutoNavigationHandler::PathSegment::startInterpolation() {
+    interpolator.setInterpolationTime(5.0); // TODO: add duration as a property or something
+    interpolator.start();
+}
 
 AutoNavigationHandler::AutoNavigationHandler()
     : properties::PropertyOwner({ "AutoNavigationHandler" })
@@ -46,14 +59,32 @@ AutoNavigationHandler::AutoNavigationHandler()
 
 AutoNavigationHandler::~AutoNavigationHandler() {} // NOLINT
 
-void AutoNavigationHandler::updateCamera() {
-    ghoul_assert(camera() != nullptr, "Camera must not be nullptr");
-
-    // TODO: update the camera
+void AutoNavigationHandler::setPath(PathSegment ps) {
+    _path = ps;
 }
 
 Camera* AutoNavigationHandler::camera() const {
     return global::navigationHandler.camera();
+}
+
+void AutoNavigationHandler::startPath() {
+    _path.startInterpolation();
+}
+
+void AutoNavigationHandler::updateCamera(double deltaTime) {
+    ghoul_assert(camera() != nullptr, "Camera must not be nullptr");
+
+    if (_path.interpolator.isInterpolating()) {
+        _path.interpolator.setDeltaTime(static_cast<float>(deltaTime));
+        _path.interpolator.step();
+
+        // Position
+        double t = _path.interpolator.value();
+        glm::dvec3 cameraPosition = _path.start.position * (1.0 - t) + _path.end.position * t;
+
+        camera()->setPositionVec3(cameraPosition);
+        //camera()->setRotation(_cameraRotation);
+    }
 }
 
 } // namespace openspace::autonavigation
