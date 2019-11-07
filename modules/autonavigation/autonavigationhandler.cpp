@@ -47,7 +47,7 @@ AutoNavigationHandler::AutoNavigationHandler()
 AutoNavigationHandler::~AutoNavigationHandler() {} // NOLINT
 
 void AutoNavigationHandler::updateCamera() {
-    ghoul_assert(_camera != nullptr, "Camera must not be nullptr");
+    ghoul_assert(camera() != nullptr, "Camera must not be nullptr");
 
     // TODO: update the camera
 }
