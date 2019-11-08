@@ -28,6 +28,7 @@
 #include <openspace/scene/scenegraphnode.h>
 #include <openspace/scripting/lualibrary.h>
 #include <openspace/util/camera.h>
+#include <openspace/util/updatestructures.h>
 #include <openspace/query/query.h>
 #include <ghoul/logging/logmanager.h>
 
@@ -82,16 +83,23 @@ namespace openspace::autonavigation::luascriptfunctions {
 
         // Find target node position and a desired rotation
         glm::dvec3 targetPosition = targetNode->worldPosition();
-        // TODO: compute orientation and add move target position away from surface
+        double nodeRadius = static_cast<double>(targetNode->boundingSphere());
+        glm::dvec3 targetToCameraVector = startPosition - targetPosition;
 
+        // TODO: let the user input this? Or control this in a more clever fashion
+        double desiredDistance = 2*nodeRadius;
+
+        // move target position out from surface, along vector to camera
+        targetPosition += glm::normalize(targetToCameraVector) * (nodeRadius + desiredDistance);
+
+        // Target rotation
         glm::dmat4 lookAtMat = glm::lookAt(
             startPosition,
             targetPosition,
             Camera::UpDirectionCameraSpace
         );
 
-        glm::dquat targetRotation = glm::normalize(
-            glm::inverse(glm::quat_cast(lookAtMat)));
+        glm::dquat targetRotation = glm::normalize(glm::inverse(glm::quat_cast(lookAtMat)));
 
         AutoNavigationModule* module = global::moduleEngine.module<AutoNavigationModule>();
         AutoNavigationHandler& handler = module->AutoNavigationHandler();
