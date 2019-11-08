@@ -25,11 +25,9 @@
 #include <modules/autonavigation/autonavigationhandler.h>
 
 #include <openspace/engine/globals.h>
-#include <openspace/interaction/interpolator.h>
 #include <openspace/interaction/navigationhandler.h>
 #include <openspace/util/camera.h>
 #include <ghoul/logging/logmanager.h>
-#include <glm/glm.hpp>
 #include <glm/gtx/vector_angle.hpp>
 #include <glm/gtx/quaternion.hpp>
 
@@ -40,7 +38,7 @@ namespace {
 namespace openspace::autonavigation {
 
 AutoNavigationHandler::CameraState::CameraState(glm::dvec3 pos, glm::dquat rot)
-    : position(pos)/*, _rotation(rot) */{}
+    : position(pos), rotation(rot) {}
 
 AutoNavigationHandler::PathSegment::PathSegment(CameraState start, CameraState end)
     : start(start), end(end) {}
@@ -82,8 +80,14 @@ void AutoNavigationHandler::updateCamera(double deltaTime) {
         double t = _path.interpolator.value();
         glm::dvec3 cameraPosition = _path.start.position * (1.0 - t) + _path.end.position * t;
 
+        // Rotation
+        glm::dquat cameraRotation = glm::slerp(
+            _path.start.rotation,
+            _path.end.rotation,
+            glm::min(t * _path.interpolator.deltaTimeScaled(), 1.0));
+
         camera()->setPositionVec3(cameraPosition);
-        //camera()->setRotation(_cameraRotation);
+        camera()->setRotation(cameraRotation);
     }
 }
 

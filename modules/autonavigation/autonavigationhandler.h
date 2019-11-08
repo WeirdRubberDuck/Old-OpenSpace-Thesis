@@ -25,7 +25,9 @@
 #ifndef __OPENSPACE_CORE___AUTONAVIGATIONHANDLER___H__
 #define __OPENSPACE_CORE___AUTONAVIGATIONHANDLER___H__
 
+#include <openspace/interaction/interpolator.h>
 #include <openspace/properties/propertyowner.h>
+#include <ghoul/glm.h>
 
 namespace openspace {
     class Camera;
@@ -41,7 +43,7 @@ public:
         CameraState(glm::dvec3 pos, glm::dquat rot);
 
         glm::dvec3 position;
-        //glm::dquat rotation;
+        glm::dquat rotation;
     };
 
     struct PathSegment {

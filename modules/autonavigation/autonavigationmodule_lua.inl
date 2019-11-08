@@ -77,17 +77,28 @@ namespace openspace::autonavigation::luascriptfunctions {
             );
         }
 
-        // Find target node position
-        glm::dvec3 targetPosition = targetNode->worldPosition(); 
-        // TODO: compute orientation and add move target position away from surface
         glm::dvec3 startPosition = global::navigationHandler.camera()->positionVec3(); 
+        glm::dquat startRotation = global::navigationHandler.camera()->rotationQuaternion();
+
+        // Find target node position and a desired rotation
+        glm::dvec3 targetPosition = targetNode->worldPosition();
+        // TODO: compute orientation and add move target position away from surface
+
+        glm::dmat4 lookAtMat = glm::lookAt(
+            startPosition,
+            targetPosition,
+            Camera::UpDirectionCameraSpace
+        );
+
+        glm::dquat targetRotation = glm::normalize(
+            glm::inverse(glm::quat_cast(lookAtMat)));
 
         AutoNavigationModule* module = global::moduleEngine.module<AutoNavigationModule>();
         AutoNavigationHandler& handler = module->AutoNavigationHandler();
 
         // Generate path
-        AutoNavigationHandler::CameraState start(startPosition, glm::dquat());
-        AutoNavigationHandler::CameraState end(targetPosition, glm::dquat());
+        AutoNavigationHandler::CameraState start(startPosition, startRotation);
+        AutoNavigationHandler::CameraState end(targetPosition, targetRotation);
         AutoNavigationHandler::PathSegment pathSegment(start, end);
 
         handler.setPath(pathSegment);
