@@ -32,14 +32,18 @@ double linear(double t) { return t; };
 
 double step(double t) { return (t > 0.5); };
 
-double qubicEaseIn(double t) { return (t*t*t); };
+double circularEaseOut(double p){
+    return sqrt((2 - p) * p);
+}
 
-double qubicEaseOut(double t) {
+double cubicEaseIn(double t) { return (t*t*t); };
+
+double cubicEaseOut(double t) {
     double p = 1 - t;
     return (p*p*p);
 };
 
-double qubicEaseInOut(double t) {
+double cubicEaseInOut(double t) {
     if (t < 0.5) {
         return 4 * t * t * t;
     }
@@ -48,6 +52,15 @@ double qubicEaseInOut(double t) {
         return 0.5 * f * f * f + 1;
     }
 };
+
+double quadraticEaseInOut(double t) {
+    if (t < 0.5) {
+        return 2 * t * t;
+    }
+    else {
+        return (-2 * t * t) + (4 * t) - 1;
+    }
+}
 
 double exponentialEaseInOut(double t) {
     if (t == 0.0 || t == 1.0) return t;

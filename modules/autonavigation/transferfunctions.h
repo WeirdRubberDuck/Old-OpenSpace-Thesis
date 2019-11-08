@@ -33,11 +33,15 @@ double linear(double t);
 
 double step(double t);
 
-double qubicEaseIn(double t);
+double circularEaseOut(double p);
 
-double qubicEaseOut(double t);
+double cubicEaseIn(double t);
 
-double qubicEaseInOut(double t);
+double cubicEaseOut(double t);
+
+double cubicEaseInOut(double t);
+
+double quadraticEaseInOut(double t);
 
 double exponentialEaseInOut(double t);
 

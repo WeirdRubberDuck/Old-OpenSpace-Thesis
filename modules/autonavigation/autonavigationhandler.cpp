@@ -46,12 +46,14 @@ AutoNavigationHandler::PathSegment::PathSegment(CameraState start, CameraState e
 
 void AutoNavigationHandler::PathSegment::startInterpolation() {
 
-    positionInterpolator.setTransferFunction(transferfunctions::linear); //TODO; set as a property or something
-    positionInterpolator.setInterpolationTime(5.0); // TODO: add duration as a property or something
+    const double duration = 5; // TODO: add duration as a property or something
+
+    positionInterpolator.setTransferFunction(transferfunctions::quadraticEaseInOut); //TODO; set as a property or something
+    positionInterpolator.setInterpolationTime(duration); 
     positionInterpolator.start();
 
     rotationInterpolator.setTransferFunction(transferfunctions::linear); //TODO; set as a property or something
-    rotationInterpolator.setInterpolationTime(5.0); // TODO: add duration as a property or something
+    rotationInterpolator.setInterpolationTime(duration); 
     rotationInterpolator.start();
 }
 
