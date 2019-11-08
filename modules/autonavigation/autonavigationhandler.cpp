@@ -24,6 +24,7 @@
 
 #include <modules/autonavigation/autonavigationhandler.h>
 
+#include <modules/autonavigation/transferfunctions.h>
 #include <openspace/engine/globals.h>
 #include <openspace/interaction/navigationhandler.h>
 #include <openspace/util/camera.h>
@@ -44,8 +45,14 @@ AutoNavigationHandler::PathSegment::PathSegment(CameraState start, CameraState e
     : start(start), end(end) {}
 
 void AutoNavigationHandler::PathSegment::startInterpolation() {
-    interpolator.setInterpolationTime(5.0); // TODO: add duration as a property or something
-    interpolator.start();
+
+    positionInterpolator.setTransferFunction(transferfunctions::step); //TODO; set as a property or something
+    positionInterpolator.setInterpolationTime(5.0); // TODO: add duration as a property or something
+    positionInterpolator.start();
+
+    rotationInterpolator.setTransferFunction(transferfunctions::linear); //TODO; set as a property or something
+    rotationInterpolator.setInterpolationTime(5.0); // TODO: add duration as a property or something
+    rotationInterpolator.start();
 }
 
 AutoNavigationHandler::AutoNavigationHandler()
@@ -72,23 +79,32 @@ void AutoNavigationHandler::startPath() {
 void AutoNavigationHandler::updateCamera(double deltaTime) {
     ghoul_assert(camera() != nullptr, "Camera must not be nullptr");
 
-    if (_path.interpolator.isInterpolating()) {
-        _path.interpolator.setDeltaTime(static_cast<float>(deltaTime));
-        _path.interpolator.step();
+    glm::dvec3 cameraPosition = camera()->positionVec3();
+    glm::dquat cameraRotation = camera()->rotationQuaternion();
 
-        // Position
-        double t = _path.interpolator.value();
-        glm::dvec3 cameraPosition = _path.start.position * (1.0 - t) + _path.end.position * t;
+    // Position
+    if (_path.positionInterpolator.isInterpolating()) {
+        _path.positionInterpolator.setDeltaTime(static_cast<float>(deltaTime));
+        _path.positionInterpolator.step();
 
-        // Rotation
-        glm::dquat cameraRotation = glm::slerp(
+        double t = _path.positionInterpolator.value();
+        cameraPosition = _path.start.position * (1.0 - t) + _path.end.position * t;
+    }
+
+    // Rotation
+    if (_path.rotationInterpolator.isInterpolating()) {
+        _path.rotationInterpolator.setDeltaTime(static_cast<float>(deltaTime));
+        _path.rotationInterpolator.step();
+        
+        double t = _path.rotationInterpolator.value();
+        cameraRotation = glm::slerp(
             _path.start.rotation,
             _path.end.rotation,
-            glm::min(t * _path.interpolator.deltaTimeScaled(), 1.0));
-
-        camera()->setPositionVec3(cameraPosition);
-        camera()->setRotation(cameraRotation);
+            glm::min(t * _path.rotationInterpolator.deltaTimeScaled(), 1.0));
     }
+
+    camera()->setPositionVec3(cameraPosition);
+    camera()->setRotation(cameraRotation);
 }
 
 } // namespace openspace::autonavigation

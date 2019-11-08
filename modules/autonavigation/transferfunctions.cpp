@@ -22,59 +22,42 @@
  * OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                                         *
  ****************************************************************************************/
 
-#ifndef __OPENSPACE_CORE___AUTONAVIGATIONHANDLER___H__
-#define __OPENSPACE_CORE___AUTONAVIGATIONHANDLER___H__
+#include <modules/autonavigation/transferfunctions.h>
 
-#include <openspace/interaction/interpolator.h>
-#include <openspace/properties/propertyowner.h>
 #include <ghoul/glm.h>
 
-namespace openspace {
-    class Camera;
-} // namespace openspace
+namespace openspace::autonavigation::transferfunctions {
 
-namespace openspace::autonavigation {
+double linear(double t) { return t; };
 
-class AutoNavigationHandler : public properties::PropertyOwner {
-public:
-    
-    struct CameraState {
-        CameraState() = default;
-        CameraState(glm::dvec3 pos, glm::dquat rot);
+double step(double t) { return (t > 0.5); };
 
-        glm::dvec3 position;
-        glm::dquat rotation;
-    };
+double qubicEaseIn(double t) { return (t*t*t); };
 
-    struct PathSegment {
-        PathSegment() = default;
-        PathSegment(CameraState start, CameraState end);
-
-        void startInterpolation();
-
-        CameraState start;
-        CameraState end;
-        interaction::Interpolator<double> positionInterpolator;
-        interaction::Interpolator<double> rotationInterpolator;
-    };
-
-    AutoNavigationHandler();
-    ~AutoNavigationHandler();
-
-    // Mutators
-    void setPath(PathSegment ps);
-
-    // Accessors
-    Camera* camera() const;
-
-    void startPath();
-    void updateCamera(double deltaTime);
-
-private:
-
-    PathSegment _path; // TODO: later this will have to be some sort of list
+double qubicEaseOut(double t) {
+    double p = 1 - t;
+    return (p*p*p);
 };
 
-} // namespace openspace::autonavigation
+double qubicEaseInOut(double t) {
+    if (t < 0.5) {
+        return 4 * t * t * t;
+    }
+    else {
+        double f = ((2 * t) - 2);
+        return 0.5 * f * f * f + 1;
+    }
+};
 
-#endif // __OPENSPACE_CORE___NAVIGATIONHANDLER___H__
+double exponentialEaseInOut(double t) {
+    if (t == 0.0 || t == 1.0) return t;
+
+    if (t < 0.5) {
+        return 0.5 * glm::pow(2, (20 * t) - 10);
+    }
+    else {
+        return -0.5 * glm::pow(2, (-20 * t) + 10) + 1;
+    }
+};
+
+} // namespace

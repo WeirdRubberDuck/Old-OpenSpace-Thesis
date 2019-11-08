@@ -22,59 +22,24 @@
  * OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                                         *
  ****************************************************************************************/
 
-#ifndef __OPENSPACE_CORE___AUTONAVIGATIONHANDLER___H__
-#define __OPENSPACE_CORE___AUTONAVIGATIONHANDLER___H__
+#ifndef __OPENSPACE_CORE___TRANSFERFUNCTIONS___H__
+#define __OPENSPACE_CORE___TRANSFERFUNCTIONS___H__
 
-#include <openspace/interaction/interpolator.h>
-#include <openspace/properties/propertyowner.h>
-#include <ghoul/glm.h>
+namespace openspace::autonavigation::transferfunctions {
 
-namespace openspace {
-    class Camera;
-} // namespace openspace
+// Based on functions from https://github.com/warrenm/AHEasing/blob/master/AHEasing/easing.c 
 
-namespace openspace::autonavigation {
+double linear(double t);
 
-class AutoNavigationHandler : public properties::PropertyOwner {
-public:
-    
-    struct CameraState {
-        CameraState() = default;
-        CameraState(glm::dvec3 pos, glm::dquat rot);
+double step(double t);
 
-        glm::dvec3 position;
-        glm::dquat rotation;
-    };
+double qubicEaseIn(double t);
 
-    struct PathSegment {
-        PathSegment() = default;
-        PathSegment(CameraState start, CameraState end);
+double qubicEaseOut(double t);
 
-        void startInterpolation();
+double qubicEaseInOut(double t);
 
-        CameraState start;
-        CameraState end;
-        interaction::Interpolator<double> positionInterpolator;
-        interaction::Interpolator<double> rotationInterpolator;
-    };
+double exponentialEaseInOut(double t);
 
-    AutoNavigationHandler();
-    ~AutoNavigationHandler();
-
-    // Mutators
-    void setPath(PathSegment ps);
-
-    // Accessors
-    Camera* camera() const;
-
-    void startPath();
-    void updateCamera(double deltaTime);
-
-private:
-
-    PathSegment _path; // TODO: later this will have to be some sort of list
-};
-
-} // namespace openspace::autonavigation
-
-#endif // __OPENSPACE_CORE___NAVIGATIONHANDLER___H__
+}
+#endif
