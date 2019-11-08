@@ -46,7 +46,7 @@ AutoNavigationHandler::PathSegment::PathSegment(CameraState start, CameraState e
 
 void AutoNavigationHandler::PathSegment::startInterpolation() {
 
-    positionInterpolator.setTransferFunction(transferfunctions::step); //TODO; set as a property or something
+    positionInterpolator.setTransferFunction(transferfunctions::linear); //TODO; set as a property or something
     positionInterpolator.setInterpolationTime(5.0); // TODO: add duration as a property or something
     positionInterpolator.start();
 
@@ -87,6 +87,7 @@ void AutoNavigationHandler::updateCamera(double deltaTime) {
         _path.positionInterpolator.setDeltaTime(static_cast<float>(deltaTime));
         _path.positionInterpolator.step();
 
+        // TODO: see if this can be done in a better way
         double t = _path.positionInterpolator.value();
         cameraPosition = _path.start.position * (1.0 - t) + _path.end.position * t;
     }
@@ -96,11 +97,10 @@ void AutoNavigationHandler::updateCamera(double deltaTime) {
         _path.rotationInterpolator.setDeltaTime(static_cast<float>(deltaTime));
         _path.rotationInterpolator.step();
         
-        double t = _path.rotationInterpolator.value();
         cameraRotation = glm::slerp(
             _path.start.rotation,
             _path.end.rotation,
-            glm::min(t * _path.rotationInterpolator.deltaTimeScaled(), 1.0));
+            _path.rotationInterpolator.value());
     }
 
     camera()->setPositionVec3(cameraPosition);

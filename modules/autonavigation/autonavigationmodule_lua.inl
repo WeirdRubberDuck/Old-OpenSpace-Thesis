@@ -31,6 +31,7 @@
 #include <openspace/util/updatestructures.h>
 #include <openspace/query/query.h>
 #include <ghoul/logging/logmanager.h>
+#include <glm/gtx/vector_angle.hpp>
 
 namespace openspace::autonavigation::luascriptfunctions {
 
@@ -78,8 +79,14 @@ namespace openspace::autonavigation::luascriptfunctions {
             );
         }
 
-        glm::dvec3 startPosition = global::navigationHandler.camera()->positionVec3(); 
-        glm::dquat startRotation = global::navigationHandler.camera()->rotationQuaternion();
+        // TODO: create functions
+        Camera* camera = global::navigationHandler.camera();
+        if (!camera) {
+            ghoul::lua::luaError(L, fmt::format("No camera"));
+        }
+
+        glm::dvec3 startPosition = camera->positionVec3();
+        glm::dquat startRotation = camera->rotationQuaternion();
 
         // Find target node position and a desired rotation
         glm::dvec3 targetPosition = targetNode->worldPosition();
@@ -92,11 +99,11 @@ namespace openspace::autonavigation::luascriptfunctions {
         // move target position out from surface, along vector to camera
         targetPosition += glm::normalize(targetToCameraVector) * (nodeRadius + desiredDistance);
 
-        // Target rotation
+         //Target rotation
         glm::dmat4 lookAtMat = glm::lookAt(
             startPosition,
             targetPosition,
-            Camera::UpDirectionCameraSpace
+            glm::dvec3(0, -1, 0)
         );
 
         glm::dquat targetRotation = glm::normalize(glm::inverse(glm::quat_cast(lookAtMat)));
