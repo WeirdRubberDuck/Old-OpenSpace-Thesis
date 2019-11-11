@@ -103,7 +103,7 @@ namespace openspace::autonavigation::luascriptfunctions {
         glm::dmat4 lookAtMat = glm::lookAt(
             startPosition,
             targetNode->worldPosition(),
-            glm::dvec3(0, -1, 0) // TODO: set this vector differently. camera's local up?
+            camera->lookUpVectorWorldSpace() 
         );
 
         glm::dquat targetRotation = glm::normalize(glm::inverse(glm::quat_cast(lookAtMat)));
