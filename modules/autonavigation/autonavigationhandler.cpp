@@ -41,19 +41,22 @@ namespace openspace::autonavigation {
 AutoNavigationHandler::CameraState::CameraState(glm::dvec3 pos, glm::dquat rot)
     : position(pos), rotation(rot) {}
 
-AutoNavigationHandler::PathSegment::PathSegment(CameraState start, CameraState end)
-    : start(start), end(end) {}
+AutoNavigationHandler::PathSegment::PathSegment(CameraState start, 
+                                                CameraState end, 
+                                                double duration)
+    : start(start), end(end) 
+{
+    positionInterpolator.setTransferFunction(
+        transferfunctions::exponentialEaseInOut); //TODO; set as a property or something
+    positionInterpolator.setInterpolationTime(duration);
+
+    rotationInterpolator.setTransferFunction(
+        transferfunctions::linear); //TODO; set as a property or something
+    rotationInterpolator.setInterpolationTime(duration);
+}
 
 void AutoNavigationHandler::PathSegment::startInterpolation() {
-
-    const double duration = 5; // TODO: add duration as a property or something
-
-    positionInterpolator.setTransferFunction(transferfunctions::quadraticEaseInOut); //TODO; set as a property or something
-    positionInterpolator.setInterpolationTime(duration); 
     positionInterpolator.start();
-
-    rotationInterpolator.setTransferFunction(transferfunctions::linear); //TODO; set as a property or something
-    rotationInterpolator.setInterpolationTime(duration); 
     rotationInterpolator.start();
 }
 

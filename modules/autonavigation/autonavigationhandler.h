@@ -48,7 +48,9 @@ public:
 
     struct PathSegment {
         PathSegment() = default;
-        PathSegment(CameraState start, CameraState end);
+        PathSegment(CameraState start, 
+                    CameraState end, 
+                    double duration);
 
         void startInterpolation();
 

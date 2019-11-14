@@ -68,9 +68,23 @@ namespace openspace::autonavigation::luascriptfunctions {
     }
 
     int goTo(lua_State* L) {
-        ghoul::lua::checkArgumentsAndThrow(L, 1, "lua::testAccessNavigationHandler");
+       // ghoul::lua::checkArgumentsAndThrow(L, 1, "lua::testAccessNavigationHandler");
+
+       // const std::string& targetNodeName = ghoul::lua::value<std::string>(L, 1);
+
+        const int n = ghoul::lua::checkArgumentsAndThrow(
+            L,
+            { 1, 2 },
+            "lua::goTo"
+        );
 
         const std::string& targetNodeName = ghoul::lua::value<std::string>(L, 1);
+
+        double duration = 5; // TODO set defalt value somwhere better
+        if (n > 1) {
+            duration = ghoul::lua::value<double>(L, 2);
+        }
+
         const SceneGraphNode* targetNode = sceneGraphNode(targetNodeName);
         if (!targetNode) {
             lua_settop(L, 0);
@@ -114,7 +128,7 @@ namespace openspace::autonavigation::luascriptfunctions {
         // Generate path
         AutoNavigationHandler::CameraState start(startPosition, startRotation);
         AutoNavigationHandler::CameraState end(targetPosition, targetRotation);
-        AutoNavigationHandler::PathSegment pathSegment(start, end);
+        AutoNavigationHandler::PathSegment pathSegment(start, end, duration);
 
         handler.setPath(pathSegment);
         handler.startPath();

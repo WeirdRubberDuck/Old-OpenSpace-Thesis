@@ -70,8 +70,8 @@ scripting::LuaLibrary AutoNavigationModule::luaLibrary() const {
             "goTo",
             &autonavigation::luascriptfunctions::goTo,
             {},
-            "string",
-            "TODO: Description. Go to the node with the given name."
+            "string, [double]",
+            "TODO: Description. Go to the node with the given name with optional duration."
         }
     };
     return res;  
