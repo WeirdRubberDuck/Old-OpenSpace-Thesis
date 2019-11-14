@@ -111,7 +111,7 @@ namespace openspace::autonavigation::luascriptfunctions {
 
          //Target rotation
         glm::dmat4 lookAtMat = glm::lookAt(
-            startPosition,
+            targetPosition,
             targetNode->worldPosition(),
             camera->lookUpVectorWorldSpace() 
         );
@@ -126,6 +126,83 @@ namespace openspace::autonavigation::luascriptfunctions {
         AutoNavigationHandler::CameraState end(targetPosition, targetRotation);
         AutoNavigationHandler::PathSegment pathSegment(start, end, duration);
 
+        handler.setPath(pathSegment);
+        handler.startPath();
+
+        ghoul_assert(lua_gettop(L) == 0, "Incorrect number of items left on stack");
+        return 0;
+    }
+
+    int goToSurface(lua_State* L) {
+        ghoul::lua::checkArgumentsAndThrow(L, 3, "lua::goToSurface");
+
+        // Check if the user provided an existing Scene graph node identifier as the first argument.
+        const std::string& globeIdentifier = ghoul::lua::value<std::string>(L, 1);
+        const SceneGraphNode* targetNode = sceneGraphNode(globeIdentifier);
+        if (!targetNode) {
+            return ghoul::lua::luaError(L, "Unknown node name: " + globeIdentifier);
+        }
+
+        Camera* camera = global::navigationHandler.camera();
+        if (!camera) {
+            ghoul::lua::luaError(L, fmt::format("No camera"));
+        }
+
+        // TODO: test if the node is a globe? Or allow any sort of node?
+        // TODO: test different cases!
+
+        const double latitude = ghoul::lua::value<double>(L, 2);
+        const double longitude = ghoul::lua::value<double>(L, 3);
+
+        // COMPUTE TARGET POSITION
+
+            // TODO: test suitable default heights
+            const double radius = targetNode->boundingSphere();
+            const double height = 2*radius; // TODO: make optional input parameter, also, base on surface 
+
+            // Compute cartesian position from geo pos 
+            const double lat = glm::radians(latitude);
+            const double lon = glm::radians(longitude);
+
+            const double cosLat = glm::cos(lat);
+            const glm::dvec3 normal = glm::dvec3(
+                cosLat * cos(lon),
+                cosLat * sin(lon),
+                sin(lat)
+            );
+            const glm::dvec3 radVec = glm::vec3(radius); // OBS! assumes sphere, but should really be an ellipsoid
+            const glm::dvec3 k = radVec * normal;
+            const double gamma = sqrt(dot(k, normal));
+            const glm::dvec3 rSurface = k / gamma;
+            glm::dvec3 cartesianPosition = rSurface + height * normal; // OBS! SHould set this based on some referenceFrame??
+
+        glm::dvec3 targetPosition = targetNode->worldPosition() +
+            glm::dvec3(targetNode->worldRotationMatrix() * cartesianPosition);
+
+        // CREATE PATH
+        glm::dvec3 startPosition = camera->positionVec3();
+        glm::dquat startRotation = camera->rotationQuaternion();
+       
+        //Target rotation
+        glm::dmat4 lookAtMat = glm::lookAt(
+            targetPosition,
+            targetNode->worldPosition(),
+            camera->lookUpVectorWorldSpace()
+        );
+
+        glm::dquat targetRotation = glm::normalize(glm::inverse(glm::quat_cast(lookAtMat)));
+
+        AutoNavigationModule* module = global::moduleEngine.module<AutoNavigationModule>();
+        AutoNavigationHandler& handler = module->AutoNavigationHandler();
+
+        // Generate path
+        double duration = 5; // TODO set defalt value somwhere better
+
+        AutoNavigationHandler::CameraState start(startPosition, startRotation);
+        AutoNavigationHandler::CameraState end(targetPosition, targetRotation);
+        AutoNavigationHandler::PathSegment pathSegment(start, end, duration);
+
+        // START PATH
         handler.setPath(pathSegment);
         handler.startPath();
 
