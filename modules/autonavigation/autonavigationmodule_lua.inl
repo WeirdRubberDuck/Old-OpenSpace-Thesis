@@ -68,11 +68,7 @@ namespace openspace::autonavigation::luascriptfunctions {
     }
 
     int goTo(lua_State* L) {
-       // ghoul::lua::checkArgumentsAndThrow(L, 1, "lua::testAccessNavigationHandler");
-
-       // const std::string& targetNodeName = ghoul::lua::value<std::string>(L, 1);
-
-        const int n = ghoul::lua::checkArgumentsAndThrow(
+        const int nArguments = ghoul::lua::checkArgumentsAndThrow(
             L,
             { 1, 2 },
             "lua::goTo"
@@ -81,7 +77,7 @@ namespace openspace::autonavigation::luascriptfunctions {
         const std::string& targetNodeName = ghoul::lua::value<std::string>(L, 1);
 
         double duration = 5; // TODO set defalt value somwhere better
-        if (n > 1) {
+        if (nArguments > 1) {
             duration = ghoul::lua::value<double>(L, 2);
         }
 
