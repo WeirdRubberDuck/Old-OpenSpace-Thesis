@@ -47,7 +47,7 @@ AutoNavigationHandler::PathSegment::PathSegment(CameraState start,
     : start(start), end(end) 
 {
     positionInterpolator.setTransferFunction(
-        transferfunctions::exponentialEaseInOut); //TODO; set as a property or something
+        transferfunctions::cubicEaseInOut); //TODO; set as a property or something
     positionInterpolator.setInterpolationTime(duration);
 
     rotationInterpolator.setTransferFunction(
