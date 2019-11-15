@@ -35,38 +35,6 @@
 
 namespace openspace::autonavigation::luascriptfunctions {
 
-    // TODO: remove later when this function is not needed as an example
-    int testMove(lua_State* L) {
-        ghoul::lua::checkArgumentsAndThrow(L, 3, "lua::testMove");
-
-        const double v1 = ghoul::lua::value<double>(L, 1);
-        const double v2 = ghoul::lua::value<double>(L, 2);
-        const double v3 = ghoul::lua::value<double>(L, 3);
-        glm::dvec3 diffVec{ v1, v2, v3 };
-
-        Camera* camera = global::navigationHandler.camera();
-        if (!camera) return -1;
-
-        camera->setPositionVec3(camera->positionVec3() + diffVec);
-
-        lua_settop(L, 0);
-        ghoul_assert(lua_gettop(L) == 0, "Incorrect number of items left on stack");
-        return 0;
-    }
-
-    // TODO: remove later when this function is not needed as an example
-    int testAccessNavigationHandler(lua_State* L) {
-        ghoul::lua::checkArgumentsAndThrow(L, 0, "lua::testAccessNavigationHandler");
-
-        AutoNavigationModule* module = global::moduleEngine.module<AutoNavigationModule>();
-        AutoNavigationHandler handler = module->AutoNavigationHandler();
-
-        // TOOD: call a test function to see if it is working
-
-        ghoul_assert(lua_gettop(L) == 0, "Incorrect number of items left on stack");
-        return 0;
-    }
-
     int goTo(lua_State* L) {
         int nArguments = ghoul::lua::checkArgumentsAndThrow(L, { 1, 2 }, "lua::goTo");
 

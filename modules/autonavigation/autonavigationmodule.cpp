@@ -53,20 +53,6 @@ scripting::LuaLibrary AutoNavigationModule::luaLibrary() const {
     res.name = "autonavigation";
     res.functions = {
         {
-            "testMove",
-            &autonavigation::luascriptfunctions::testMove,
-            {},
-            "double, double, double",
-            "Test function that moves the camera by the difference vector specified by the input x, y and z values"
-        },
-        {
-            "testAccessNavigationHandler",
-            &autonavigation::luascriptfunctions::testAccessNavigationHandler,
-            {},
-            "void",
-            "Test function to show how AutoNavigationHandler can be accessed"
-        },
-        {
             "goTo",
             &autonavigation::luascriptfunctions::goTo,
             {},
