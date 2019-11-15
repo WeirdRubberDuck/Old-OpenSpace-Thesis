@@ -39,13 +39,13 @@ namespace openspace::autonavigation::luascriptfunctions {
         int nArguments = ghoul::lua::checkArgumentsAndThrow(L, { 1, 2 }, "lua::goTo");
 
         // get target node
-        const std::string& targetNodeName = ghoul::lua::value<std::string>(L, 1);
-        const SceneGraphNode* targetNode = sceneGraphNode(targetNodeName);
+        const std::string& targetNodeIdentifier = ghoul::lua::value<std::string>(L, 1);
+        const SceneGraphNode* targetNode = sceneGraphNode(targetNodeIdentifier);
 
         if (!targetNode) {
             lua_settop(L, 0);
             return ghoul::lua::luaError(
-                L, fmt::format("Could not find node '{}' to target", targetNodeName)
+                L, fmt::format("Could not find node '{}' to target", targetNodeIdentifier)
             );
         }
 
