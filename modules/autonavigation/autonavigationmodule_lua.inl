@@ -68,20 +68,12 @@ namespace openspace::autonavigation::luascriptfunctions {
     }
 
     int goTo(lua_State* L) {
-        const int nArguments = ghoul::lua::checkArgumentsAndThrow(
-            L,
-            { 1, 2 },
-            "lua::goTo"
-        );
+        int nArguments = ghoul::lua::checkArgumentsAndThrow(L, { 1, 2 }, "lua::goTo");
 
+        // get target node
         const std::string& targetNodeName = ghoul::lua::value<std::string>(L, 1);
-
-        double duration = 5; // TODO set defalt value somwhere better
-        if (nArguments > 1) {
-            duration = ghoul::lua::value<double>(L, 2);
-        }
-
         const SceneGraphNode* targetNode = sceneGraphNode(targetNodeName);
+
         if (!targetNode) {
             lua_settop(L, 0);
             return ghoul::lua::luaError(
@@ -89,44 +81,13 @@ namespace openspace::autonavigation::luascriptfunctions {
             );
         }
 
-        // TODO: create functions
-        Camera* camera = global::navigationHandler.camera();
-        if (!camera) {
-            ghoul::lua::luaError(L, fmt::format("No camera"));
-        }
-
-        glm::dvec3 startPosition = camera->positionVec3();
-        glm::dquat startRotation = camera->rotationQuaternion();
-
-        // Find target node position and a desired rotation
-        glm::dvec3 targetPosition = targetNode->worldPosition();
-        double nodeRadius = static_cast<double>(targetNode->boundingSphere());
-        glm::dvec3 targetToCameraVector = startPosition - targetPosition;
-
-        // TODO: let the user input this? Or control this in a more clever fashion
-        double desiredDistance = 2*nodeRadius;
-
-        // move target position out from surface, along vector to camera
-        targetPosition += glm::normalize(targetToCameraVector) * (nodeRadius + desiredDistance);
-
-         //Target rotation
-        glm::dmat4 lookAtMat = glm::lookAt(
-            targetPosition,
-            targetNode->worldPosition(),
-            camera->lookUpVectorWorldSpace() 
-        );
-
-        glm::dquat targetRotation = glm::normalize(glm::inverse(glm::quat_cast(lookAtMat)));
-
-        AutoNavigationModule* module = global::moduleEngine.module<AutoNavigationModule>();
+        // get duration
+        double duration = (nArguments > 1) ? ghoul::lua::value<double>(L, 2) : 5.0; // TODO set defalt value somwhere better
+        
+        AutoNavigationModule* module = global::moduleEngine.module<AutoNavigationModule>(); // TODO: check if module was found?
         AutoNavigationHandler& handler = module->AutoNavigationHandler();
 
-        // Generate path
-        AutoNavigationHandler::CameraState start(startPosition, startRotation);
-        AutoNavigationHandler::CameraState end(targetPosition, targetRotation);
-        AutoNavigationHandler::PathSegment pathSegment(start, end, duration);
-
-        handler.setPath(pathSegment);
+        handler.createPathToNode(targetNode, duration);
         handler.startPath();
 
         ghoul_assert(lua_gettop(L) == 0, "Incorrect number of items left on stack");
@@ -139,71 +100,25 @@ namespace openspace::autonavigation::luascriptfunctions {
         // Check if the user provided an existing Scene graph node identifier as the first argument.
         const std::string& globeIdentifier = ghoul::lua::value<std::string>(L, 1);
         const SceneGraphNode* targetNode = sceneGraphNode(globeIdentifier);
-        if (!targetNode) {
-            return ghoul::lua::luaError(L, "Unknown node name: " + globeIdentifier);
-        }
 
-        Camera* camera = global::navigationHandler.camera();
-        if (!camera) {
-            ghoul::lua::luaError(L, fmt::format("No camera"));
+        if (!targetNode) {
+            lua_settop(L, 0);
+            return ghoul::lua::luaError(L, "Unknown node name: " + globeIdentifier);
         }
 
         // TODO: test if the node is a globe? Or allow any sort of node?
         // TODO: test different cases!
 
-        const double latitude = ghoul::lua::value<double>(L, 2);
-        const double longitude = ghoul::lua::value<double>(L, 3);
-
-        // COMPUTE TARGET POSITION
-
-            // TODO: test suitable default heights
-            const double radius = targetNode->boundingSphere();
-            const double height = 2*radius; // TODO: make optional input parameter, also, base on surface 
-
-            // Compute cartesian position from geo pos 
-            const double lat = glm::radians(latitude);
-            const double lon = glm::radians(longitude);
-
-            const double cosLat = glm::cos(lat);
-            const glm::dvec3 normal = glm::dvec3(
-                cosLat * cos(lon),
-                cosLat * sin(lon),
-                sin(lat)
-            );
-            const glm::dvec3 radVec = glm::vec3(radius); // OBS! assumes sphere, but should really be an ellipsoid
-            const glm::dvec3 k = radVec * normal;
-            const double gamma = sqrt(dot(k, normal));
-            const glm::dvec3 rSurface = k / gamma;
-            glm::dvec3 cartesianPosition = rSurface + height * normal; // OBS! SHould set this based on some referenceFrame??
-
-        glm::dvec3 targetPosition = targetNode->worldPosition() +
-            glm::dvec3(targetNode->worldRotationMatrix() * cartesianPosition);
-
-        // CREATE PATH
-        glm::dvec3 startPosition = camera->positionVec3();
-        glm::dquat startRotation = camera->rotationQuaternion();
-       
-        //Target rotation
-        glm::dmat4 lookAtMat = glm::lookAt(
-            targetPosition,
-            targetNode->worldPosition(),
-            camera->lookUpVectorWorldSpace()
-        );
-
-        glm::dquat targetRotation = glm::normalize(glm::inverse(glm::quat_cast(lookAtMat)));
-
         AutoNavigationModule* module = global::moduleEngine.module<AutoNavigationModule>();
         AutoNavigationHandler& handler = module->AutoNavigationHandler();
 
-        // Generate path
-        double duration = 5; // TODO set defalt value somwhere better
+        double latitude = ghoul::lua::value<double>(L, 2);
+        double longitude = ghoul::lua::value<double>(L, 3);
+        double duration = 5.0; // TODO set defalt value somwhere better/compute per distance
 
-        AutoNavigationHandler::CameraState start(startPosition, startRotation);
-        AutoNavigationHandler::CameraState end(targetPosition, targetRotation);
-        AutoNavigationHandler::PathSegment pathSegment(start, end, duration);
+        // TODO: include height over surface as optional parameter
 
-        // START PATH
-        handler.setPath(pathSegment);
+        handler.createPathToSurface(targetNode, latitude, longitude, duration);
         handler.startPath();
 
         ghoul_assert(lua_gettop(L) == 0, "Incorrect number of items left on stack");

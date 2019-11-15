@@ -38,6 +38,31 @@ namespace {
 
 namespace openspace::autonavigation {
 
+// TODO: move to a better place
+glm::dvec3 geoToCartesianPos(const double latitude, 
+                             const double longitude, 
+                             const double height, 
+                             const double radius) 
+{
+    // Compute the normal based on the angles
+    const double lat = glm::radians(latitude);
+    const double lon = glm::radians(longitude);
+    const double cosLat = glm::cos(lat);
+    const glm::dvec3 normal = glm::dvec3(
+        cosLat * cos(lon),
+        cosLat * sin(lon),
+        sin(lat)
+    ); // OBS! Should this be normalised?
+
+    // get the surface position
+    const glm::dvec3 radVec = glm::vec3(radius); // OBS! assumes sphere, but should really be an ellipsoid
+    const glm::dvec3 k = radVec * normal;
+    const double gamma = sqrt(dot(k, normal)); 
+    const glm::dvec3 rSurface = k / gamma;
+
+    return rSurface + height * normal; // model space
+}
+
 AutoNavigationHandler::CameraState::CameraState(glm::dvec3 pos, glm::dquat rot)
     : position(pos), rotation(rot) {}
 
@@ -110,6 +135,68 @@ void AutoNavigationHandler::updateCamera(double deltaTime) {
 
     camera()->setPositionVec3(cameraPosition);
     camera()->setRotation(cameraRotation);
+}
+
+void AutoNavigationHandler::createPathToNode(const SceneGraphNode* node, 
+                                             const double duration) 
+{
+    ghoul_assert(node != nullptr, "Target node must not be nullptr");
+
+    // Find target node position and a desired rotation
+    glm::dvec3 targetPosition = node->worldPosition();
+    glm::dvec3 targetToCameraVector = camera()->positionVec3() - targetPosition;
+
+    // TODO: let the user input this? Or control this in a more clever fashion
+    double nodeRadius = static_cast<double>(node->boundingSphere());
+    double desiredDistance = 2 * nodeRadius;
+
+    // move target position out from surface, along vector to camera
+    targetPosition += glm::normalize(targetToCameraVector) * (nodeRadius + desiredDistance);
+
+    setPathByTarget(node, targetPosition, node->worldPosition(), duration);
+}
+
+void AutoNavigationHandler::createPathToSurface(const SceneGraphNode* node,
+                                                const double latitude,
+                                                const double longitude, 
+                                                const double duration)
+{
+    ghoul_assert(node != nullptr, "Target node must not be nullptr");
+
+    // TODO: test suitable default heights
+    const double radius = node->boundingSphere();
+    const double height = 2 * radius; // TODO: make optional input parameter, also, base on surface 
+
+    glm::dvec3 cartesianPosition = geoToCartesianPos(latitude, longitude, height, radius);
+    glm::dvec3 targetPosition = node->worldPosition() +
+        glm::dvec3(node->worldRotationMatrix() * cartesianPosition);
+
+    setPathByTarget(node, targetPosition, node->worldPosition(), duration);
+}
+
+void AutoNavigationHandler::setPathByTarget(const SceneGraphNode* node, 
+                                            glm::dvec3 targetPosition, 
+                                            glm::dvec3 lookAtPosition,
+                                            const double duration)
+{
+    ghoul_assert(camera() != nullptr, "Camera must not be nullptr");
+
+    glm::dmat4 lookAtMat = glm::lookAt(
+        targetPosition,
+        lookAtPosition,
+        camera()->lookUpVectorWorldSpace()
+    );
+
+    glm::dquat targetRotation = glm::normalize(glm::inverse(glm::quat_cast(lookAtMat)));
+    glm::dvec3 startPosition = camera()->positionVec3();
+    glm::dquat startRotation = camera()->rotationQuaternion();
+
+    // Generate path
+    AutoNavigationHandler::CameraState start(startPosition, startRotation);
+    AutoNavigationHandler::CameraState end(targetPosition, targetRotation);
+    AutoNavigationHandler::PathSegment pathSegment(start, end, duration);
+
+    setPath(pathSegment);
 }
 
 } // namespace openspace::autonavigation
