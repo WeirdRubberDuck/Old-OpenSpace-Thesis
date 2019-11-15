@@ -65,7 +65,14 @@ scripting::LuaLibrary AutoNavigationModule::luaLibrary() const {
             {},
             "string, number, number",
             "TODO: Description. Go to the node with the name given as the first argument. "
-            "The second argument is latitude and the third is longitude(degrees)."
+            "The second argument is latitude and the third is longitude (degrees)."
+        }, 
+        {
+            "addToPath",
+            &autonavigation::luascriptfunctions::addToPath,
+            {},
+            "string, [double]",
+            "TODO: Description. Add node with the given name to the current path, with optional duration."
         }
     };
     return res;  

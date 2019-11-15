@@ -55,20 +55,26 @@ namespace openspace::autonavigation::luascriptfunctions {
         AutoNavigationModule* module = global::moduleEngine.module<AutoNavigationModule>(); // TODO: check if module was found?
         AutoNavigationHandler& handler = module->AutoNavigationHandler();
 
+        glm::dvec3 prevPosition = handler.camera()->positionVec3();
+
+        // TODO: make a function for this 
+        // ---------------------------------------------------------------
         // Find target node position and a desired rotation
         glm::dvec3 targetPosition = targetNode->worldPosition();
-        glm::dvec3 targetToCameraVector = handler.camera()->positionVec3() - targetPosition;
+        glm::dvec3 targetToPrevVector = prevPosition - targetPosition;
 
         // TODO: let the user input this? Or control this in a more clever fashion
         double radius = static_cast<double>(targetNode->boundingSphere());
         double desiredDistance = 2 * radius;
-
+       
         // move target position out from surface, along vector to camera
-        targetPosition += glm::normalize(targetToCameraVector) * (radius + desiredDistance);
+        targetPosition += glm::normalize(targetToPrevVector) * (radius + desiredDistance);
+        // ---------------------------------------------------------------
 
         handler.createPathByTarget(targetPosition, targetNode->worldPosition(), duration);
         handler.startPath();
 
+        lua_settop(L, 0);
         ghoul_assert(lua_gettop(L) == 0, "Incorrect number of items left on stack");
         return 0;
     }
@@ -109,6 +115,35 @@ namespace openspace::autonavigation::luascriptfunctions {
         handler.createPathByTarget(targetPosition, targetNode->worldPosition(), duration);
         handler.startPath();
 
+        lua_settop(L, 0);
+        ghoul_assert(lua_gettop(L) == 0, "Incorrect number of items left on stack");
+        return 0;
+    }
+
+    // TESTING-----------------------------------------------------------
+    int addToPath(lua_State* L) {
+        int nArguments = ghoul::lua::checkArgumentsAndThrow(L, { 1, 2 }, "lua::addToPath");
+
+        // get target node
+        const std::string& targetNodeIdentifier = ghoul::lua::value<std::string>(L, 1);
+        const SceneGraphNode* targetNode = sceneGraphNode(targetNodeIdentifier);
+
+        if (!targetNode) {
+            lua_settop(L, 0);
+            return ghoul::lua::luaError(
+                L, fmt::format("Could not find node '{}' to target", targetNodeIdentifier)
+            );
+        }
+
+        double duration = (nArguments > 1) ? ghoul::lua::value<double>(L, 2) : 5.0; // TODO set defalt value somwhere better
+
+        AutoNavigationModule* module = global::moduleEngine.module<AutoNavigationModule>();
+        AutoNavigationHandler& handler = module->AutoNavigationHandler();
+        handler.addToPath(targetNode, duration);
+
+        // TODO: Perhaps test if we succeeded?
+
+        lua_settop(L, 0);
         ghoul_assert(lua_gettop(L) == 0, "Incorrect number of items left on stack");
         return 0;
     }

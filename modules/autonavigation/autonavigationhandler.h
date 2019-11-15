@@ -46,31 +46,29 @@ struct GeoPosition {
     glm::dvec3 toCartesian();
 };
 
+struct CameraState {
+    CameraState() = default;
+    CameraState(glm::dvec3 pos, glm::dquat rot);
+
+    glm::dvec3 position;
+    glm::dquat rotation;
+};
+
+struct PathSegment {
+    PathSegment() = default;
+    PathSegment(CameraState start,
+        CameraState end, double duration);
+
+    void startInterpolation();
+
+    CameraState start;
+    CameraState end;
+    interaction::Interpolator<double> positionInterpolator;
+    interaction::Interpolator<double> rotationInterpolator;
+};
+
 class AutoNavigationHandler : public properties::PropertyOwner {
 public:
-    
-    struct CameraState {
-        CameraState() = default;
-        CameraState(glm::dvec3 pos, glm::dquat rot);
-
-        glm::dvec3 position;
-        glm::dquat rotation;
-    };
-
-    struct PathSegment {
-        PathSegment() = default;
-        PathSegment(CameraState start, 
-                    CameraState end, 
-                    double duration);
-
-        void startInterpolation();
-
-        CameraState start;
-        CameraState end;
-        interaction::Interpolator<double> positionInterpolator;
-        interaction::Interpolator<double> rotationInterpolator;
-    };
-
     AutoNavigationHandler();
     ~AutoNavigationHandler();
 
@@ -83,6 +81,14 @@ public:
     void startPath();
     void updateCamera(double deltaTime);
 
+    // TEST----------------------------------------------------
+    CameraState createCameraStateFromTargetPosition(
+        glm::dvec3 targetPosition, glm::dvec3 lookAtPosition);
+
+    void addToPath(const SceneGraphNode* node, double duration);
+
+    // ----------------------------------------------------
+
     // Create a path segment from the current camera position to a target
     // camera position and look at position, with given duration
     void createPathByTarget(glm::dvec3 targetPosition,
@@ -90,7 +96,11 @@ public:
 
 private:
 
+    // TODO: remove this!
     PathSegment _path; // TODO: later this will have to be some sort of list
+
+    // OBS! Could we use a simpler/more efficient data structure?
+    std::vector<PathSegment> _pathSegments;
 };
 
 } // namespace openspace::autonavigation
