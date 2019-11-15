@@ -87,7 +87,18 @@ namespace openspace::autonavigation::luascriptfunctions {
         AutoNavigationModule* module = global::moduleEngine.module<AutoNavigationModule>(); // TODO: check if module was found?
         AutoNavigationHandler& handler = module->AutoNavigationHandler();
 
-        handler.createPathToNode(targetNode, duration);
+        // Find target node position and a desired rotation
+        glm::dvec3 targetPosition = targetNode->worldPosition();
+        glm::dvec3 targetToCameraVector = handler.camera()->positionVec3() - targetPosition;
+
+        // TODO: let the user input this? Or control this in a more clever fashion
+        double radius = static_cast<double>(targetNode->boundingSphere());
+        double desiredDistance = 2 * radius;
+
+        // move target position out from surface, along vector to camera
+        targetPosition += glm::normalize(targetToCameraVector) * (radius + desiredDistance);
+
+        handler.createPathByTarget(targetPosition, targetNode->worldPosition(), duration);
         handler.startPath();
 
         ghoul_assert(lua_gettop(L) == 0, "Incorrect number of items left on stack");
@@ -114,11 +125,20 @@ namespace openspace::autonavigation::luascriptfunctions {
 
         double latitude = ghoul::lua::value<double>(L, 2);
         double longitude = ghoul::lua::value<double>(L, 3);
-        double duration = 5.0; // TODO set defalt value somwhere better/compute per distance
 
         // TODO: include height over surface as optional parameter
+        // TODO: test suitable default heights
+        const double radius = targetNode->boundingSphere();
+        const double height = 1.5 * radius; 
+        double duration = 5.0; // TODO set defalt value somwhere better/compute per distance
 
-        handler.createPathToSurface(targetNode, latitude, longitude, duration);
+        GeoPosition geoPosition{ latitude, longitude, height, targetNode };
+
+        glm::dvec3 cartesianPosition = geoPosition.toCartesian();
+        glm::dvec3 targetPosition = targetNode->worldPosition() +
+            glm::dvec3(targetNode->worldRotationMatrix() * cartesianPosition);
+
+        handler.createPathByTarget(targetPosition, targetNode->worldPosition(), duration);
         handler.startPath();
 
         ghoul_assert(lua_gettop(L) == 0, "Incorrect number of items left on stack");

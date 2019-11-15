@@ -36,6 +36,16 @@ namespace openspace {
 
 namespace openspace::autonavigation {
 
+// TODO: move to its own file?
+struct GeoPosition {
+    double latitude;    // degrees
+    double longitude;   // degrees
+    double height;
+    const SceneGraphNode* globe;
+
+    glm::dvec3 toCartesian();
+};
+
 class AutoNavigationHandler : public properties::PropertyOwner {
 public:
     
@@ -73,19 +83,14 @@ public:
     void startPath();
     void updateCamera(double deltaTime);
 
-    // Create a path from the current camera state to a specific scene graph node
-    void createPathToNode(const SceneGraphNode* node, const double duration);
-    // Create a path from the current camera state to a specific geographic 
-    // location for a scene graph node
-    void createPathToSurface(const SceneGraphNode* node, const double latitude, 
-        const double longitude, const double duration);
+    // Create a path segment from the current camera position to a target
+    // camera position and look at position, with given duration
+    void createPathByTarget(glm::dvec3 targetPosition,
+        glm::dvec3 lookAtPosition, const double duration);
 
 private:
 
     PathSegment _path; // TODO: later this will have to be some sort of list
-
-    void setPathByTarget(glm::dvec3 targetPosition, 
-        glm::dvec3 lookAtPosition, const double duration);
 };
 
 } // namespace openspace::autonavigation

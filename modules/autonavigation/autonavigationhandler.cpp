@@ -38,12 +38,9 @@ namespace {
 
 namespace openspace::autonavigation {
 
-// TODO: move to a better place
-glm::dvec3 geoToCartesianPos(const double latitude, 
-                             const double longitude, 
-                             const double height, 
-                             const double radius) 
-{
+glm::dvec3 GeoPosition::toCartesian() {
+    ghoul_assert(globe != nullptr, "Globe must not be nullptr");
+
     // Compute the normal based on the angles
     const double lat = glm::radians(latitude);
     const double lon = glm::radians(longitude);
@@ -54,10 +51,11 @@ glm::dvec3 geoToCartesianPos(const double latitude,
         sin(lat)
     ); // OBS! Should this be normalised?
 
-    // get the surface position
+    const double radius = static_cast<double>(globe->boundingSphere());
     const glm::dvec3 radVec = glm::vec3(radius); // OBS! assumes sphere, but should really be an ellipsoid
+
     const glm::dvec3 k = radVec * normal;
-    const double gamma = sqrt(dot(k, normal)); 
+    const double gamma = sqrt(dot(k, normal));
     const glm::dvec3 rSurface = k / gamma;
 
     return rSurface + height * normal; // model space
@@ -137,46 +135,9 @@ void AutoNavigationHandler::updateCamera(double deltaTime) {
     camera()->setRotation(cameraRotation);
 }
 
-void AutoNavigationHandler::createPathToNode(const SceneGraphNode* node, 
-                                             const double duration) 
-{
-    ghoul_assert(node != nullptr, "Target node must not be nullptr");
-
-    // Find target node position and a desired rotation
-    glm::dvec3 targetPosition = node->worldPosition();
-    glm::dvec3 targetToCameraVector = camera()->positionVec3() - targetPosition;
-
-    // TODO: let the user input this? Or control this in a more clever fashion
-    double nodeRadius = static_cast<double>(node->boundingSphere());
-    double desiredDistance = 2 * nodeRadius;
-
-    // move target position out from surface, along vector to camera
-    targetPosition += glm::normalize(targetToCameraVector) * (nodeRadius + desiredDistance);
-
-    setPathByTarget(targetPosition, node->worldPosition(), duration);
-}
-
-void AutoNavigationHandler::createPathToSurface(const SceneGraphNode* node,
-                                                const double latitude,
-                                                const double longitude, 
-                                                const double duration)
-{
-    ghoul_assert(node != nullptr, "Target node must not be nullptr");
-
-    // TODO: test suitable default heights
-    const double radius = node->boundingSphere();
-    const double height = 2 * radius; // TODO: make optional input parameter, also, base on surface 
-
-    glm::dvec3 cartesianPosition = geoToCartesianPos(latitude, longitude, height, radius);
-    glm::dvec3 targetPosition = node->worldPosition() +
-        glm::dvec3(node->worldRotationMatrix() * cartesianPosition);
-
-    setPathByTarget(targetPosition, node->worldPosition(), duration);
-}
-
-void AutoNavigationHandler::setPathByTarget(glm::dvec3 targetPosition, 
-                                            glm::dvec3 lookAtPosition,
-                                            const double duration)
+void AutoNavigationHandler::createPathByTarget(glm::dvec3 targetPosition, 
+                                               glm::dvec3 lookAtPosition,
+                                               const double duration)
 {
     ghoul_assert(camera() != nullptr, "Camera must not be nullptr");
 
