@@ -52,7 +52,7 @@ glm::dvec3 GeoPosition::toCartesian() {
     ); // OBS! Should this be normalised?
 
     const double radius = static_cast<double>(globe->boundingSphere());
-    const glm::dvec3 radVec = glm::vec3(radius); // OBS! assumes sphere, but should really be an ellipsoid
+    const glm::dvec3 radVec = glm::dvec3(radius); // OBS! assumes sphere, but should really be an ellipsoid
 
     const glm::dvec3 k = radVec * normal;
     const double gamma = sqrt(dot(k, normal));
@@ -72,7 +72,6 @@ PathSegment::PathSegment(CameraState start,
     : start(start), end(end) 
 {
     // TODO: make sure duration is larger than zero
-
     positionInterpolator.setTransferFunction(
         transferfunctions::cubicEaseInOut); //TODO; set as a property or something
     positionInterpolator.setInterpolationTime(duration);
@@ -153,6 +152,7 @@ void AutoNavigationHandler::createPathByTarget(glm::dvec3 targetPosition,
     );
 
     glm::dquat targetRotation = glm::normalize(glm::inverse(glm::quat_cast(lookAtMat)));
+
     glm::dvec3 startPosition = camera()->positionVec3();
     glm::dquat startRotation = camera()->rotationQuaternion();
 
@@ -181,10 +181,22 @@ CameraState AutoNavigationHandler::createCameraStateFromTargetPosition(
     return CameraState(targetPosition, targetRotation);
 }
 
-void AutoNavigationHandler::addToPath(const SceneGraphNode* node, double duration) {
-    ghoul_assert(node != nullptr, "Target node must not be nullptr");
+glm::dvec3 AutoNavigationHandler::computeTargetPositionAtNode(const SceneGraphNode* node, glm::dvec3 prevPosition) {
+    glm::dvec3 targetPosition = node->worldPosition();
+    glm::dvec3 targetToPrevVector = prevPosition - targetPosition;
 
-    // TODO: Compute a target position close to the given node
+    // TODO: let the user input this? Or control this in a more clever fashion
+    double radius = static_cast<double>(node->boundingSphere());
+    double desiredDistance = 2 * radius;
+
+    // move target position out from surface, along vector to camera
+    targetPosition += glm::normalize(targetToPrevVector) * (radius + desiredDistance);
+
+    return targetPosition;
+}
+
+void AutoNavigationHandler::addToPath(const SceneGraphNode* node, const double duration) {
+    ghoul_assert(node != nullptr, "Target node must not be nullptr");
 
     CameraState startState;
     if (_pathSegments.empty()) {
@@ -193,23 +205,11 @@ void AutoNavigationHandler::addToPath(const SceneGraphNode* node, double duratio
         startState.rotation = camera()->rotationQuaternion();
     }
     else {
-        PathSegment lastSegment = _pathSegments.back();
+        PathSegment& lastSegment = _pathSegments.back();
         startState = lastSegment.end;
     }
 
-    // TODO: make this a function?
-    // -----------------------------------------------------------
-    glm::dvec3 targetPosition = node->worldPosition();
-    glm::dvec3 targetToPrevVector = startState.position - targetPosition;
-
-    // TODO: let the user input this? Or control this in a more clever fashion
-    double radius = static_cast<double>(node->boundingSphere());
-    double desiredDistance = 2 * radius;
-
-    // move target position out from surface, along vector to camera
-    targetPosition += glm::normalize(targetToPrevVector) * (radius + desiredDistance);
-    // -----------------------------------------------------------
-
+    glm::dvec3 targetPosition = computeTargetPositionAtNode(node, startState.position);
     CameraState endState = createCameraStateFromTargetPosition(targetPosition, node->worldPosition());
 
     PathSegment newSegment{ startState, endState, duration };

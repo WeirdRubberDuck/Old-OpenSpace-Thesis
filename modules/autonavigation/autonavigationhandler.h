@@ -73,7 +73,7 @@ public:
     ~AutoNavigationHandler();
 
     // Mutators
-    void setPath(PathSegment ps);
+    void setPath(PathSegment ps); // TODO: remove
 
     // Accessors
     Camera* camera() const;
@@ -82,10 +82,13 @@ public:
     void updateCamera(double deltaTime);
 
     // TEST----------------------------------------------------
+
     CameraState createCameraStateFromTargetPosition(
         glm::dvec3 targetPosition, glm::dvec3 lookAtPosition);
 
-    void addToPath(const SceneGraphNode* node, double duration);
+    glm::dvec3 computeTargetPositionAtNode(const SceneGraphNode* node, glm::dvec3 prevPosition);
+
+    void addToPath(const SceneGraphNode* node, const double duration);
 
     // ----------------------------------------------------
 
@@ -99,7 +102,7 @@ private:
     // TODO: remove this!
     PathSegment _path; // TODO: later this will have to be some sort of list
 
-    // OBS! Could we use a simpler/more efficient data structure?
+    // OBS! Could we use a simpler data structure?
     std::vector<PathSegment> _pathSegments;
 };
 

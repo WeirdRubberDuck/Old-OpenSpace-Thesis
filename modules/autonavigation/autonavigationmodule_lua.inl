@@ -56,20 +56,7 @@ namespace openspace::autonavigation::luascriptfunctions {
         AutoNavigationHandler& handler = module->AutoNavigationHandler();
 
         glm::dvec3 prevPosition = handler.camera()->positionVec3();
-
-        // TODO: make a function for this 
-        // ---------------------------------------------------------------
-        // Find target node position and a desired rotation
-        glm::dvec3 targetPosition = targetNode->worldPosition();
-        glm::dvec3 targetToPrevVector = prevPosition - targetPosition;
-
-        // TODO: let the user input this? Or control this in a more clever fashion
-        double radius = static_cast<double>(targetNode->boundingSphere());
-        double desiredDistance = 2 * radius;
-       
-        // move target position out from surface, along vector to camera
-        targetPosition += glm::normalize(targetToPrevVector) * (radius + desiredDistance);
-        // ---------------------------------------------------------------
+        glm::dvec3 targetPosition = handler.computeTargetPositionAtNode(targetNode, prevPosition);
 
         handler.createPathByTarget(targetPosition, targetNode->worldPosition(), duration);
         handler.startPath();
