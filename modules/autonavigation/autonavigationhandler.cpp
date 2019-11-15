@@ -153,7 +153,7 @@ void AutoNavigationHandler::createPathToNode(const SceneGraphNode* node,
     // move target position out from surface, along vector to camera
     targetPosition += glm::normalize(targetToCameraVector) * (nodeRadius + desiredDistance);
 
-    setPathByTarget(node, targetPosition, node->worldPosition(), duration);
+    setPathByTarget(targetPosition, node->worldPosition(), duration);
 }
 
 void AutoNavigationHandler::createPathToSurface(const SceneGraphNode* node,
@@ -171,11 +171,10 @@ void AutoNavigationHandler::createPathToSurface(const SceneGraphNode* node,
     glm::dvec3 targetPosition = node->worldPosition() +
         glm::dvec3(node->worldRotationMatrix() * cartesianPosition);
 
-    setPathByTarget(node, targetPosition, node->worldPosition(), duration);
+    setPathByTarget(targetPosition, node->worldPosition(), duration);
 }
 
-void AutoNavigationHandler::setPathByTarget(const SceneGraphNode* node, 
-                                            glm::dvec3 targetPosition, 
+void AutoNavigationHandler::setPathByTarget(glm::dvec3 targetPosition, 
                                             glm::dvec3 lookAtPosition,
                                             const double duration)
 {

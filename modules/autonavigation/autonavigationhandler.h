@@ -84,8 +84,8 @@ private:
 
     PathSegment _path; // TODO: later this will have to be some sort of list
 
-    void setPathByTarget(const SceneGraphNode* node,
-        glm::dvec3 targetPosition, glm::dvec3 lookAtPosition, const double duration);
+    void setPathByTarget(glm::dvec3 targetPosition, 
+        glm::dvec3 lookAtPosition, const double duration);
 };
 
 } // namespace openspace::autonavigation
