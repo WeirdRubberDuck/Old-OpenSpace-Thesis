@@ -122,6 +122,7 @@ void AutoNavigationHandler::updateCamera(double deltaTime) {
 
 void AutoNavigationHandler::addToPath(const SceneGraphNode* node, const double duration) {
     ghoul_assert(node != nullptr, "Target node must not be nullptr");
+    ghoul_assert(duration > 0, "Duration must be larger than zero.");
 
     CameraState start = getStartState();
 
@@ -132,6 +133,8 @@ void AutoNavigationHandler::addToPath(const SceneGraphNode* node, const double d
 }
 
 void AutoNavigationHandler::addToPath(GeoPosition geo, double duration) {
+    ghoul_assert(duration > 0, "Duration must be larger than zero.");
+
     SceneGraphNode* targetNode = geo.globe;
     glm::dvec3 cartesianPos = geo.toCartesian();
 
@@ -145,6 +148,8 @@ void AutoNavigationHandler::addToPath(GeoPosition geo, double duration) {
 }
 
 void AutoNavigationHandler::addToPath(CameraState endState, double duration) {
+    ghoul_assert(duration > 0, "Duration must be larger than zero.");
+
     CameraState start = getStartState();
     addPathSegment(start, endState, duration);
 }

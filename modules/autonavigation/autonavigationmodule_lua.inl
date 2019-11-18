@@ -51,6 +51,11 @@ namespace openspace::autonavigation::luascriptfunctions {
 
         // get duration
         double duration = (nArguments > 1) ? ghoul::lua::value<double>(L, 2) : 5.0; // TODO set defalt value somwhere better
+
+        if (duration <= 0) {
+            lua_settop(L, 0);
+            return ghoul::lua::luaError(L, "Duration must be larger than zero");
+        }
         
         AutoNavigationModule* module = global::moduleEngine.module<AutoNavigationModule>(); // TODO: check if module was found?
         AutoNavigationHandler& handler = module->AutoNavigationHandler();
@@ -94,6 +99,11 @@ namespace openspace::autonavigation::luascriptfunctions {
         // TODO set defalt duration somwhere better or compute from distance
         double duration = (nArguments > 3) ? ghoul::lua::value<double>(L, 4) : 5.0;
 
+        if (duration <= 0) {
+            lua_settop(L, 0);
+            return ghoul::lua::luaError(L, "Duration must be larger than zero");
+        }
+
         handler.clearPath();
         handler.addToPath(geoPosition, duration);
         handler.startPath();
@@ -118,6 +128,11 @@ namespace openspace::autonavigation::luascriptfunctions {
         }
 
         double duration = (nArguments > 1) ? ghoul::lua::value<double>(L, 2) : 5.0; // TODO set defalt value somwhere better
+
+        if (duration <= 0) {
+            lua_settop(L, 0);
+            return ghoul::lua::luaError(L, "Duration must be larger than zero");
+        }
 
         AutoNavigationModule* module = global::moduleEngine.module<AutoNavigationModule>();
         AutoNavigationHandler& handler = module->AutoNavigationHandler();
