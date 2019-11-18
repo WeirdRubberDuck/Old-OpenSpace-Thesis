@@ -65,11 +65,11 @@ namespace openspace::autonavigation::luascriptfunctions {
     }
 
     int goToSurface(lua_State* L) {
-        ghoul::lua::checkArgumentsAndThrow(L, 3, "lua::goToSurface");
+        int nArguments = ghoul::lua::checkArgumentsAndThrow(L, { 3, 4 }, "lua::goToSurface");
 
         // Check if the user provided an existing Scene graph node identifier as the first argument.
         const std::string& globeIdentifier = ghoul::lua::value<std::string>(L, 1);
-        const SceneGraphNode* targetNode = sceneGraphNode(globeIdentifier);
+        SceneGraphNode* targetNode = sceneGraphNode(globeIdentifier);
 
         if (!targetNode) {
             lua_settop(L, 0);
@@ -85,29 +85,24 @@ namespace openspace::autonavigation::luascriptfunctions {
         double latitude = ghoul::lua::value<double>(L, 2);
         double longitude = ghoul::lua::value<double>(L, 3);
 
-        // TODO: MAKE THIS WORK WITH NEW LIST
+        // TODO: include height as optional parameter
+        const double radius = targetNode->boundingSphere();
+        const double height = 1.5 * radius; // TODO: should be height over surface
 
-        //// TODO: include height over surface as optional parameter
-        //// TODO: test suitable default heights
-        //const double radius = targetNode->boundingSphere();
-        //const double height = 1.5 * radius; 
-        //double duration = 5.0; // TODO set defalt value somwhere better/compute per distance
+        GeoPosition geoPosition{ latitude, longitude, height, targetNode };
+        
+        // TODO set defalt duration somwhere better or compute from distance
+        double duration = (nArguments > 3) ? ghoul::lua::value<double>(L, 4) : 5.0;
 
-        //GeoPosition geoPosition{ latitude, longitude, height, targetNode };
-
-        //glm::dvec3 cartesianPosition = geoPosition.toCartesian();
-        //glm::dvec3 targetPosition = targetNode->worldPosition() +
-        //    glm::dvec3(targetNode->worldRotationMatrix() * cartesianPosition);
-
-        //handler.createPathByTarget(targetPosition, targetNode->worldPosition(), duration);
-        //handler.startPath();
+        handler.clearPath();
+        handler.addToPath(geoPosition, duration);
+        handler.startPath();
 
         lua_settop(L, 0);
         ghoul_assert(lua_gettop(L) == 0, "Incorrect number of items left on stack");
         return 0;
     }
 
-    // TESTING-----------------------------------------------------------
     int addToPath(lua_State* L) {
         int nArguments = ghoul::lua::checkArgumentsAndThrow(L, { 1, 2 }, "lua::addToPath");
 

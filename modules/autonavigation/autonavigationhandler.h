@@ -41,7 +41,7 @@ struct GeoPosition {
     double latitude;    // degrees
     double longitude;   // degrees
     double height;
-    const SceneGraphNode* globe;
+    SceneGraphNode* globe;
 
     glm::dvec3 toCartesian(); // TODO: move out of struct
 };
@@ -72,16 +72,19 @@ public:
 
     void updateCamera(double deltaTime);
     void addToPath(const SceneGraphNode* node, double duration);
+    void addToPath(GeoPosition geo, double duration);
+    void addToPath(CameraState endState, double duration);
     void clearPath();
     void startPath();
 
     glm::dvec3 computeTargetPositionAtNode(const SceneGraphNode* node, 
-        glm::dvec3 prevPos);
+        const glm::dvec3 prevPos);
 
     CameraState cameraStateFromTargetPosition(glm::dvec3 targetPos, 
         glm::dvec3 lookAtPos);
 
 private:
+    CameraState getStartState();
     void addPathSegment(CameraState start, CameraState end, double duration);
 
     std::vector<PathSegment> _pathSegments;
