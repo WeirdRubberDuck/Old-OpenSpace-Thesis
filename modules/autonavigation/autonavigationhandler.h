@@ -43,7 +43,7 @@ struct GeoPosition {
     double height;
     const SceneGraphNode* globe;
 
-    glm::dvec3 toCartesian(); // todo: move out of struct
+    glm::dvec3 toCartesian(); // TODO: move out of struct
 };
 
 struct CameraState {
@@ -55,6 +55,7 @@ struct PathSegment {
     CameraState start;
     CameraState end;
     double duration;
+    double startTime;
 };
 
 class AutoNavigationHandler : public properties::PropertyOwner {
@@ -66,9 +67,11 @@ public:
 
     // Accessors
     Camera* camera() const;
+    const double pathDuration() const;
+    PathSegment& currentPathSegment();
 
     void updateCamera(double deltaTime);
-    void addToPath(const SceneGraphNode* node, const double duration);
+    void addToPath(const SceneGraphNode* node, double duration);
     void clearPath();
     void startPath();
 
@@ -79,10 +82,11 @@ public:
         glm::dvec3 lookAtPos);
 
 private:
+    void addPathSegment(CameraState start, CameraState end, double duration);
 
     std::vector<PathSegment> _pathSegments;
 
-    double _totalDuration;
+    double _pathDuration;
     double _currentTime; 
     bool _isPlaying = false;
 };

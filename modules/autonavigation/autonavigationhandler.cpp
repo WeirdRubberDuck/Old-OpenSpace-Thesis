@@ -72,8 +72,22 @@ AutoNavigationHandler::AutoNavigationHandler()
 }
 
 AutoNavigationHandler::~AutoNavigationHandler() {} // NOLINT
+
 Camera* AutoNavigationHandler::camera() const {
     return global::navigationHandler.camera();
+}
+
+const double AutoNavigationHandler::pathDuration() const {
+    return _pathDuration;
+}
+
+PathSegment& AutoNavigationHandler::currentPathSegment() {
+    for (PathSegment& ps : _pathSegments) {
+        double endTime = ps.startTime + ps.duration;
+        if (endTime > _currentTime) {
+            return ps;
+        }
+    }
 }
 
 void AutoNavigationHandler::updateCamera(double deltaTime) {
@@ -81,44 +95,28 @@ void AutoNavigationHandler::updateCamera(double deltaTime) {
 
     if (!_isPlaying || _pathSegments.empty()) return;
 
-    //  find current pathsegment (TODO: make private function)
-    PathSegment currentSegment = _pathSegments.front();
-    double durationSum = 0.0;
-    for (PathSegment& ps : _pathSegments) {
-        durationSum += ps.duration;
-        if (durationSum > _currentTime) { // TODO: make sure edge cases are correct
-            currentSegment = ps;
-            break;
-        }
-    }
+    PathSegment cps = currentPathSegment(); 
 
-    // interpolate (TODO: make a function, depending on spline type?)
+    // INTERPOLATE (TODO: make a function, and allow different methods)
 
-    const CameraState& start = currentSegment.start;
-    const CameraState& end = currentSegment.end;
-    const double duration = currentSegment.duration;
-
-    // TODO: compute scaled time based on where on the curve we are
-    double startTime = durationSum - duration; // Later, perhaps save this..
-    double t = (_currentTime - startTime) / duration;
+    double t = (_currentTime - cps.startTime) / cps.duration;
     t = transferfunctions::cubicEaseInOut(t); // TEST
     t = std::max(0.0, std::min(t, 1.0));
 
     // TODO: add different ways to interpolate later
-    glm::dvec3 cameraPosition = start.position * (1.0 - t) + end.position * t;
-    glm::dquat cameraRotation = glm::slerp(
-        start.rotation,
-        end.rotation,
-        t);
+    glm::dvec3 cameraPosition = cps.start.position * (1.0 - t) + cps.end.position * t;
+    glm::dquat cameraRotation = 
+        glm::slerp(cps.start.rotation, cps.end.rotation, t);
 
     camera()->setPositionVec3(cameraPosition);
     camera()->setRotation(cameraRotation);
 
     _currentTime += deltaTime;
 
-    // reached the end of the path
-    if (_currentTime > _totalDuration) {
+    // reached the end of the path => stop playing
+    if (_currentTime > _pathDuration) {
         _isPlaying = false;
+        // TODO: implement suitable stop behaviour
     }
 }
 
@@ -138,21 +136,21 @@ void AutoNavigationHandler::addToPath(const SceneGraphNode* node, const double d
     glm::dvec3 targetPos = computeTargetPositionAtNode(node, start.position);
     CameraState end = cameraStateFromTargetPosition(targetPos, node->worldPosition());
 
-    PathSegment newSegment{ start, end, duration };
-    _pathSegments.push_back(newSegment);
+    addPathSegment(start, end, duration);
 }
 
 void AutoNavigationHandler::clearPath() {
     _pathSegments.clear();
+    _pathDuration = 0.0;
+    _currentTime = 0.0;
 }
 
 void AutoNavigationHandler::startPath() {
-
-    // TODO: if no path, return
-
-    _totalDuration = 0.0;
+    ghoul_assert(!_pathSegments.empty(), "Cannot start an empty path");
+    
+    _pathDuration = 0.0;
     for (auto ps : _pathSegments) {
-        _totalDuration += ps.duration;
+        _pathDuration += ps.duration;
     }
     _currentTime = 0.0;
     _isPlaying = true;
@@ -186,6 +184,18 @@ CameraState AutoNavigationHandler::cameraStateFromTargetPosition(
     glm::dquat targetRot = glm::normalize(glm::inverse(glm::quat_cast(lookAtMat)));
 
     return CameraState{ targetPos, targetRot };
+}
+
+void AutoNavigationHandler::addPathSegment(CameraState start, CameraState end, double duration) {
+    // compute startTime 
+    double startTime = 0.0;
+    if (!_pathSegments.empty()) {
+        PathSegment last = _pathSegments.back();
+        startTime = last.startTime + last.duration;
+    }
+
+    PathSegment newSegment{ start, end, duration, startTime };
+    _pathSegments.push_back(newSegment);
 }
 
 } // namespace openspace::autonavigation
