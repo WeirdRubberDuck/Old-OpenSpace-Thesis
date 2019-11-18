@@ -26,6 +26,7 @@
 
 #include <modules/autonavigation/transferfunctions.h>
 #include <openspace/engine/globals.h>
+#include <openspace/engine/windowdelegate.h>
 #include <openspace/interaction/navigationhandler.h>
 #include <openspace/util/camera.h>
 #include <ghoul/logging/logmanager.h>
@@ -61,31 +62,7 @@ glm::dvec3 GeoPosition::toCartesian() {
     return rSurface + height * normal; // model space
 }
 
-
-CameraState::CameraState(glm::dvec3 pos, glm::dquat rot)
-    : position(pos), rotation(rot) {}
-
-
-PathSegment::PathSegment(CameraState start, 
-                                                CameraState end, 
-                                                double duration)
-    : start(start), end(end) 
-{
-    // TODO: make sure duration is larger than zero
-    positionInterpolator.setTransferFunction(
-        transferfunctions::cubicEaseInOut); //TODO; set as a property or something
-    positionInterpolator.setInterpolationTime(duration);
-
-    rotationInterpolator.setTransferFunction(
-        transferfunctions::linear); //TODO; set as a property or something
-    rotationInterpolator.setInterpolationTime(duration);
-}
-
-void PathSegment::startInterpolation() {
-    positionInterpolator.start();
-    rotationInterpolator.start();
-}
-
+// ------------------------------------------------------------
 
 AutoNavigationHandler::AutoNavigationHandler()
     : properties::PropertyOwner({ "AutoNavigationHandler" })
@@ -95,125 +72,120 @@ AutoNavigationHandler::AutoNavigationHandler()
 }
 
 AutoNavigationHandler::~AutoNavigationHandler() {} // NOLINT
-
-void AutoNavigationHandler::setPath(PathSegment ps) {
-    _path = ps;
-}
-
 Camera* AutoNavigationHandler::camera() const {
     return global::navigationHandler.camera();
-}
-
-void AutoNavigationHandler::startPath() {
-    _path.startInterpolation();
 }
 
 void AutoNavigationHandler::updateCamera(double deltaTime) {
     ghoul_assert(camera() != nullptr, "Camera must not be nullptr");
 
-    glm::dvec3 cameraPosition = camera()->positionVec3();
-    glm::dquat cameraRotation = camera()->rotationQuaternion();
+    if (!_isPlaying || _pathSegments.empty()) return;
 
-    // Position
-    if (_path.positionInterpolator.isInterpolating()) {
-        _path.positionInterpolator.setDeltaTime(static_cast<float>(deltaTime));
-        _path.positionInterpolator.step();
-
-        // TODO: see if this can be done in a better way
-        double t = _path.positionInterpolator.value();
-        cameraPosition = _path.start.position * (1.0 - t) + _path.end.position * t;
+    //  find current pathsegment (TODO: make private function)
+    PathSegment currentSegment = _pathSegments.front();
+    double durationSum = 0.0;
+    for (PathSegment& ps : _pathSegments) {
+        durationSum += ps.duration;
+        if (durationSum > _currentTime) { // TODO: make sure edge cases are correct
+            currentSegment = ps;
+            break;
+        }
     }
 
-    // Rotation
-    if (_path.rotationInterpolator.isInterpolating()) {
-        _path.rotationInterpolator.setDeltaTime(static_cast<float>(deltaTime));
-        _path.rotationInterpolator.step();
-        
-        cameraRotation = glm::slerp(
-            _path.start.rotation,
-            _path.end.rotation,
-            _path.rotationInterpolator.value());
-    }
+    // interpolate (TODO: make a function, depending on spline type?)
+
+    const CameraState& start = currentSegment.start;
+    const CameraState& end = currentSegment.end;
+    const double duration = currentSegment.duration;
+
+    // TODO: compute scaled time based on where on the curve we are
+    double startTime = durationSum - duration; // Later, perhaps save this..
+    double t = (_currentTime - startTime) / duration;
+    t = transferfunctions::cubicEaseInOut(t); // TEST
+    t = std::max(0.0, std::min(t, 1.0));
+
+    // TODO: add different ways to interpolate later
+    glm::dvec3 cameraPosition = start.position * (1.0 - t) + end.position * t;
+    glm::dquat cameraRotation = glm::slerp(
+        start.rotation,
+        end.rotation,
+        t);
 
     camera()->setPositionVec3(cameraPosition);
     camera()->setRotation(cameraRotation);
+
+    _currentTime += deltaTime;
+
+    // reached the end of the path
+    if (_currentTime > _totalDuration) {
+        _isPlaying = false;
+    }
 }
 
-void AutoNavigationHandler::createPathByTarget(glm::dvec3 targetPosition, 
-                                               glm::dvec3 lookAtPosition,
-                                               const double duration)
-{
-    ghoul_assert(camera() != nullptr, "Camera must not be nullptr");
+void AutoNavigationHandler::addToPath(const SceneGraphNode* node, const double duration) {
+    ghoul_assert(node != nullptr, "Target node must not be nullptr");
 
-    glm::dmat4 lookAtMat = glm::lookAt(
-        targetPosition,
-        lookAtPosition,
-        camera()->lookUpVectorWorldSpace()
-    );
+    CameraState start;
+    if (_pathSegments.empty()) {
+        // No previous path, use the camera's current position as start state
+        start.position = camera()->positionVec3();
+        start.rotation = camera()->rotationQuaternion();
+    }
+    else {
+        start = _pathSegments.back().end;
+    }
 
-    glm::dquat targetRotation = glm::normalize(glm::inverse(glm::quat_cast(lookAtMat)));
+    glm::dvec3 targetPos = computeTargetPositionAtNode(node, start.position);
+    CameraState end = cameraStateFromTargetPosition(targetPos, node->worldPosition());
 
-    glm::dvec3 startPosition = camera()->positionVec3();
-    glm::dquat startRotation = camera()->rotationQuaternion();
-
-    // Generate path
-    CameraState start(startPosition, startRotation);
-    CameraState end(targetPosition, targetRotation);
-    PathSegment pathSegment(start, end, duration);
-
-    setPath(pathSegment);
+    PathSegment newSegment{ start, end, duration };
+    _pathSegments.push_back(newSegment);
 }
 
-// TEST----------------------------------------------------
-CameraState AutoNavigationHandler::createCameraStateFromTargetPosition(
-    glm::dvec3 targetPosition, glm::dvec3 lookAtPosition)
-{
-    ghoul_assert(camera() != nullptr, "Camera must not be nullptr");
-
-    glm::dmat4 lookAtMat = glm::lookAt(
-        targetPosition,
-        lookAtPosition,
-        camera()->lookUpVectorWorldSpace()
-    );
-
-    glm::dquat targetRotation = glm::normalize(glm::inverse(glm::quat_cast(lookAtMat)));
-
-    return CameraState(targetPosition, targetRotation);
+void AutoNavigationHandler::clearPath() {
+    _pathSegments.clear();
 }
 
-glm::dvec3 AutoNavigationHandler::computeTargetPositionAtNode(const SceneGraphNode* node, glm::dvec3 prevPosition) {
-    glm::dvec3 targetPosition = node->worldPosition();
-    glm::dvec3 targetToPrevVector = prevPosition - targetPosition;
+void AutoNavigationHandler::startPath() {
+
+    // TODO: if no path, return
+
+    _totalDuration = 0.0;
+    for (auto ps : _pathSegments) {
+        _totalDuration += ps.duration;
+    }
+    _currentTime = 0.0;
+    _isPlaying = true;
+}
+
+glm::dvec3 AutoNavigationHandler::computeTargetPositionAtNode(const SceneGraphNode* node, glm::dvec3 prevPos) {
+    glm::dvec3 targetPos = node->worldPosition();
+    glm::dvec3 targetToPrevVector = prevPos - targetPos;
 
     // TODO: let the user input this? Or control this in a more clever fashion
     double radius = static_cast<double>(node->boundingSphere());
     double desiredDistance = 2 * radius;
 
     // move target position out from surface, along vector to camera
-    targetPosition += glm::normalize(targetToPrevVector) * (radius + desiredDistance);
+    targetPos += glm::normalize(targetToPrevVector) * (radius + desiredDistance);
 
-    return targetPosition;
+    return targetPos;
 }
 
-void AutoNavigationHandler::addToPath(const SceneGraphNode* node, const double duration) {
-    ghoul_assert(node != nullptr, "Target node must not be nullptr");
+CameraState AutoNavigationHandler::cameraStateFromTargetPosition(
+    glm::dvec3 targetPos, glm::dvec3 lookAtPos)
+{
+    ghoul_assert(camera() != nullptr, "Camera must not be nullptr");
 
-    CameraState startState;
-    if (_pathSegments.empty()) {
-        // No previous path, use the camera's current position as start state
-        startState.position = camera()->positionVec3();
-        startState.rotation = camera()->rotationQuaternion();
-    }
-    else {
-        PathSegment& lastSegment = _pathSegments.back();
-        startState = lastSegment.end;
-    }
+    glm::dmat4 lookAtMat = glm::lookAt(
+        targetPos,
+        lookAtPos,
+        camera()->lookUpVectorWorldSpace()
+    );
 
-    glm::dvec3 targetPosition = computeTargetPositionAtNode(node, startState.position);
-    CameraState endState = createCameraStateFromTargetPosition(targetPosition, node->worldPosition());
+    glm::dquat targetRot = glm::normalize(glm::inverse(glm::quat_cast(lookAtMat)));
 
-    PathSegment newSegment{ startState, endState, duration };
-    _pathSegments.push_back(newSegment);
+    return CameraState{ targetPos, targetRot };
 }
 
 } // namespace openspace::autonavigation

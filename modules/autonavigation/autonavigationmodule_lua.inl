@@ -54,11 +54,9 @@ namespace openspace::autonavigation::luascriptfunctions {
         
         AutoNavigationModule* module = global::moduleEngine.module<AutoNavigationModule>(); // TODO: check if module was found?
         AutoNavigationHandler& handler = module->AutoNavigationHandler();
-
-        glm::dvec3 prevPosition = handler.camera()->positionVec3();
-        glm::dvec3 targetPosition = handler.computeTargetPositionAtNode(targetNode, prevPosition);
-
-        handler.createPathByTarget(targetPosition, targetNode->worldPosition(), duration);
+        
+        handler.clearPath();
+        handler.addToPath(targetNode, duration);
         handler.startPath();
 
         lua_settop(L, 0);
@@ -87,20 +85,22 @@ namespace openspace::autonavigation::luascriptfunctions {
         double latitude = ghoul::lua::value<double>(L, 2);
         double longitude = ghoul::lua::value<double>(L, 3);
 
-        // TODO: include height over surface as optional parameter
-        // TODO: test suitable default heights
-        const double radius = targetNode->boundingSphere();
-        const double height = 1.5 * radius; 
-        double duration = 5.0; // TODO set defalt value somwhere better/compute per distance
+        // TODO: MAKE THIS WORK WITH NEW LIST
 
-        GeoPosition geoPosition{ latitude, longitude, height, targetNode };
+        //// TODO: include height over surface as optional parameter
+        //// TODO: test suitable default heights
+        //const double radius = targetNode->boundingSphere();
+        //const double height = 1.5 * radius; 
+        //double duration = 5.0; // TODO set defalt value somwhere better/compute per distance
 
-        glm::dvec3 cartesianPosition = geoPosition.toCartesian();
-        glm::dvec3 targetPosition = targetNode->worldPosition() +
-            glm::dvec3(targetNode->worldRotationMatrix() * cartesianPosition);
+        //GeoPosition geoPosition{ latitude, longitude, height, targetNode };
 
-        handler.createPathByTarget(targetPosition, targetNode->worldPosition(), duration);
-        handler.startPath();
+        //glm::dvec3 cartesianPosition = geoPosition.toCartesian();
+        //glm::dvec3 targetPosition = targetNode->worldPosition() +
+        //    glm::dvec3(targetNode->worldRotationMatrix() * cartesianPosition);
+
+        //handler.createPathByTarget(targetPosition, targetNode->worldPosition(), duration);
+        //handler.startPath();
 
         lua_settop(L, 0);
         ghoul_assert(lua_gettop(L) == 0, "Incorrect number of items left on stack");
@@ -129,6 +129,32 @@ namespace openspace::autonavigation::luascriptfunctions {
         handler.addToPath(targetNode, duration);
 
         // TODO: Perhaps test if we succeeded?
+
+        lua_settop(L, 0);
+        ghoul_assert(lua_gettop(L) == 0, "Incorrect number of items left on stack");
+        return 0;
+    }
+
+    int startPath(lua_State* L) {
+        ghoul::lua::checkArgumentsAndThrow(L, 0, "lua::startPath");
+
+        AutoNavigationModule* module = global::moduleEngine.module<AutoNavigationModule>();
+        AutoNavigationHandler& handler = module->AutoNavigationHandler();
+
+        handler.startPath();
+
+        lua_settop(L, 0);
+        ghoul_assert(lua_gettop(L) == 0, "Incorrect number of items left on stack");
+        return 0;
+    }
+
+    int clearPath(lua_State* L) {
+        ghoul::lua::checkArgumentsAndThrow(L, 0, "lua::startPath");
+
+        AutoNavigationModule* module = global::moduleEngine.module<AutoNavigationModule>();
+        AutoNavigationHandler& handler = module->AutoNavigationHandler();
+
+        handler.clearPath();
 
         lua_settop(L, 0);
         ghoul_assert(lua_gettop(L) == 0, "Incorrect number of items left on stack");

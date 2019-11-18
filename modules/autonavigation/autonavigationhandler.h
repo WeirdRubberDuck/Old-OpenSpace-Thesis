@@ -43,28 +43,18 @@ struct GeoPosition {
     double height;
     const SceneGraphNode* globe;
 
-    glm::dvec3 toCartesian();
+    glm::dvec3 toCartesian(); // todo: move out of struct
 };
 
 struct CameraState {
-    CameraState() = default;
-    CameraState(glm::dvec3 pos, glm::dquat rot);
-
     glm::dvec3 position;
     glm::dquat rotation;
 };
 
 struct PathSegment {
-    PathSegment() = default;
-    PathSegment(CameraState start,
-        CameraState end, double duration);
-
-    void startInterpolation();
-
     CameraState start;
     CameraState end;
-    interaction::Interpolator<double> positionInterpolator;
-    interaction::Interpolator<double> rotationInterpolator;
+    double duration;
 };
 
 class AutoNavigationHandler : public properties::PropertyOwner {
@@ -73,37 +63,28 @@ public:
     ~AutoNavigationHandler();
 
     // Mutators
-    void setPath(PathSegment ps); // TODO: remove
 
     // Accessors
     Camera* camera() const;
 
-    void startPath();
     void updateCamera(double deltaTime);
-
-    // TEST----------------------------------------------------
-
-    CameraState createCameraStateFromTargetPosition(
-        glm::dvec3 targetPosition, glm::dvec3 lookAtPosition);
-
-    glm::dvec3 computeTargetPositionAtNode(const SceneGraphNode* node, glm::dvec3 prevPosition);
-
     void addToPath(const SceneGraphNode* node, const double duration);
+    void clearPath();
+    void startPath();
 
-    // ----------------------------------------------------
+    glm::dvec3 computeTargetPositionAtNode(const SceneGraphNode* node, 
+        glm::dvec3 prevPos);
 
-    // Create a path segment from the current camera position to a target
-    // camera position and look at position, with given duration
-    void createPathByTarget(glm::dvec3 targetPosition,
-        glm::dvec3 lookAtPosition, const double duration);
+    CameraState cameraStateFromTargetPosition(glm::dvec3 targetPos, 
+        glm::dvec3 lookAtPos);
 
 private:
 
-    // TODO: remove this!
-    PathSegment _path; // TODO: later this will have to be some sort of list
-
-    // OBS! Could we use a simpler data structure?
     std::vector<PathSegment> _pathSegments;
+
+    double _totalDuration;
+    double _currentTime; 
+    bool _isPlaying = false;
 };
 
 } // namespace openspace::autonavigation

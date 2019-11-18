@@ -73,6 +73,20 @@ scripting::LuaLibrary AutoNavigationModule::luaLibrary() const {
             {},
             "string, [double]",
             "TODO: Description. Add node with the given name to the current path, with optional duration."
+        },
+        {
+            "startPath",
+            &autonavigation::luascriptfunctions::startPath,
+            {},
+            "void",
+            "TODO: Description. Start the path that is currently activated in the autonavigationhandler." //TODO also make this one start path from file
+        },
+        {
+            "clearPath",
+            &autonavigation::luascriptfunctions::clearPath,
+            {},
+            "void",
+            "TODO: Description. Clear the current active path." //TODO also make this one start path from file
         }
     };
     return res;  
