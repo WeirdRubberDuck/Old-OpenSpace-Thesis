@@ -103,6 +103,12 @@ void AutoNavigationHandler::updateCamera(double deltaTime) {
     t = transferfunctions::cubicEaseInOut(t); // TEST
     t = std::max(0.0, std::min(t, 1.0));
 
+    // TODO: don't set every frame and 
+    // Set anchor node in orbitalNavigator, to render visible nodes and 
+    // add possibility to navigate when we reach the end.
+    CameraState cs = (t < 0.5) ? cps.start : cps.end;
+    global::navigationHandler.orbitalNavigator().setAnchorNode(cs.referenceNode);
+
     // TODO: add different ways to interpolate later
     glm::dvec3 cameraPosition = cps.start.position * (1.0 - t) + cps.end.position * t;
     glm::dquat cameraRotation = 
@@ -127,7 +133,8 @@ void AutoNavigationHandler::addToPath(const SceneGraphNode* node, const double d
     CameraState start = getStartState();
 
     glm::dvec3 targetPos = computeTargetPositionAtNode(node, start.position);
-    CameraState end = cameraStateFromTargetPosition(targetPos, node->worldPosition());
+    CameraState end = cameraStateFromTargetPosition(
+        targetPos, node->worldPosition(), node->identifier());
 
     addPathSegment(start, end, duration);
 }
@@ -142,7 +149,8 @@ void AutoNavigationHandler::addToPath(GeoPosition geo, double duration) {
         glm::dvec3(targetNode->worldRotationMatrix() * cartesianPos);
 
     glm::dvec3 lookAtPos = targetNode->worldPosition();
-    CameraState cs = cameraStateFromTargetPosition(targetPos, lookAtPos);
+    CameraState cs = cameraStateFromTargetPosition(
+        targetPos, lookAtPos, targetNode->identifier());
 
     addToPath(cs, duration);
 }
@@ -188,7 +196,7 @@ glm::dvec3 AutoNavigationHandler::computeTargetPositionAtNode(
 }
 
 CameraState AutoNavigationHandler::cameraStateFromTargetPosition(
-    glm::dvec3 targetPos, glm::dvec3 lookAtPos)
+    glm::dvec3 targetPos, glm::dvec3 lookAtPos, std::string node)
 {
     ghoul_assert(camera() != nullptr, "Camera must not be nullptr");
 
@@ -200,15 +208,15 @@ CameraState AutoNavigationHandler::cameraStateFromTargetPosition(
 
     glm::dquat targetRot = glm::normalize(glm::inverse(glm::quat_cast(lookAtMat)));
 
-    return CameraState{ targetPos, targetRot };
+    return CameraState{ targetPos, targetRot, node};
 }
 
 CameraState AutoNavigationHandler::getStartState() {
     CameraState cs;
     if (_pathSegments.empty()) {
-        // No previous path, use the camera's current position as start state
         cs.position = camera()->positionVec3();
         cs.rotation = camera()->rotationQuaternion();
+        cs.referenceNode = global::navigationHandler.anchorNode()->identifier();
     }
     else {
         cs = _pathSegments.back().end;

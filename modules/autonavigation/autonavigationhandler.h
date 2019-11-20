@@ -49,6 +49,7 @@ struct GeoPosition {
 struct CameraState {
     glm::dvec3 position;
     glm::dquat rotation;
+    std::string referenceNode;
 };
 
 struct PathSegment {
@@ -81,7 +82,7 @@ public:
         const glm::dvec3 prevPos);
 
     CameraState cameraStateFromTargetPosition(glm::dvec3 targetPos, 
-        glm::dvec3 lookAtPos);
+        glm::dvec3 lookAtPos, std::string node);
 
 private:
     CameraState getStartState();
