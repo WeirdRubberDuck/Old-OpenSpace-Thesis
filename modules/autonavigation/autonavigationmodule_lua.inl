@@ -22,6 +22,7 @@
  * OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                                         *
  ****************************************************************************************/
 
+#include <modules/autonavigation/pathinstruction.h>
 #include <openspace/engine/globals.h>
 #include <openspace/engine/moduleengine.h>
 #include <openspace/interaction/navigationhandler.h>
@@ -165,6 +166,69 @@ namespace openspace::autonavigation::luascriptfunctions {
         AutoNavigationHandler& handler = module->AutoNavigationHandler();
 
         handler.clearPath();
+
+        lua_settop(L, 0);
+        ghoul_assert(lua_gettop(L) == 0, "Incorrect number of items left on stack");
+        return 0;
+    }
+
+    // TEST: try creating a path using a dictionary
+    int generatePath(lua_State* L) {
+        ghoul::lua::checkArgumentsAndThrow(L, 1, "lua::startPath");
+
+        ghoul::Dictionary dictionary;
+        ghoul::lua::luaDictionaryFromState(L, dictionary);
+
+        // Test if we have any instructions
+        ghoul::Dictionary instructions = dictionary.value<ghoul::Dictionary>("Instructions");
+
+        // convert dictionary to array of dictionaries
+        std::vector<ghoul::Dictionary> instructionsArray;
+        for (size_t i = 1; i <= instructions.size(); ++i) {
+            ghoul::Dictionary ins = instructions.value<ghoul::Dictionary>(std::to_string(i));
+            instructionsArray.push_back(ins);
+        }
+
+        if (instructionsArray.empty()) {
+            lua_settop(L, 0);
+            return ghoul::lua::luaError(
+                L, fmt::format("No instructions for camera path generation were provided.")
+            );
+        }
+
+        // read instructions
+        std::vector<PathInstruction> pathInstructions;
+        for (ghoul::Dictionary dict : instructionsArray) {
+            openspace::documentation::TestResult r =
+                openspace::documentation::testSpecification(PathInstruction::Documentation(), dict);
+
+            if (!r.success) {
+                lua_settop(L, 0);
+                return ghoul::lua::luaError(
+                    L, fmt::format("Could not read instruction: {}", ghoul::to_string(r))
+                );
+            } 
+
+            pathInstructions.push_back(PathInstruction(dict));
+        }
+
+        AutoNavigationModule* module = global::moduleEngine.module<AutoNavigationModule>();
+        AutoNavigationHandler& handler = module->AutoNavigationHandler();
+
+        handler.clearPath();
+        // TODO: create path from instructions
+        for (auto pi : pathInstructions) {
+            const SceneGraphNode* targetNode = sceneGraphNode(pi.targetNode);
+            double duration = pi.duration;
+            if (!targetNode) {
+                lua_settop(L, 0);
+                return ghoul::lua::luaError(
+                    L, fmt::format("Could not find node '{}' to target", pi.targetNode)
+                );
+            }
+            handler.addToPath(targetNode, duration);
+        }
+        handler.startPath();
 
         lua_settop(L, 0);
         ghoul_assert(lua_gettop(L) == 0, "Incorrect number of items left on stack");

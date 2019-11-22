@@ -88,6 +88,14 @@ scripting::LuaLibrary AutoNavigationModule::luaLibrary() const {
             {},
             "void",
             "TODO: Description. Clear the current active path." //TODO also make this one start path from file
+        },
+        // TEST: try creating a path using a dictionary
+        {
+            "generatePath",
+            &autonavigation::luascriptfunctions::generatePath,
+            {},
+            "table",
+            "TODO: Description. Generate the path described by the lua table." //TODO also make this one start path from file
         }
     };
     return res;  
