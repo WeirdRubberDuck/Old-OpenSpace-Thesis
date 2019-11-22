@@ -174,7 +174,7 @@ namespace openspace::autonavigation::luascriptfunctions {
 
     // TEST: try creating a path using a dictionary
     int generatePath(lua_State* L) {
-        ghoul::lua::checkArgumentsAndThrow(L, 1, "lua::startPath");
+        ghoul::lua::checkArgumentsAndThrow(L, 1, "lua::generatePath");
 
         ghoul::Dictionary dictionary;
         ghoul::lua::luaDictionaryFromState(L, dictionary);
