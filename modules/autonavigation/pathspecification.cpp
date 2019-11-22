@@ -109,6 +109,10 @@ PathSpecification::PathSpecification(const ghoul::Dictionary& dictionary) {
     }
 }
 
+PathSpecification::PathSpecification(const std::vector<Instruction> instructions)
+    : _instructions(instructions)
+{}
+
 const std::vector<PathSpecification::Instruction>& PathSpecification::instructions() const {
     return _instructions;
 }

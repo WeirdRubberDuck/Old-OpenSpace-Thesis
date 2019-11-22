@@ -47,7 +47,7 @@ public:
 
     PathSpecification() = default;
     PathSpecification(const ghoul::Dictionary& dictionary);
-    // TODO: create from vector
+    PathSpecification(const std::vector<Instruction> instructions);
 
     // Accessors
     const std::vector<Instruction>& instructions() const;
