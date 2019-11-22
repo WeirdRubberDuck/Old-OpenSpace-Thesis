@@ -114,64 +114,6 @@ namespace openspace::autonavigation::luascriptfunctions {
         return 0;
     }
 
-    int addToPath(lua_State* L) {
-        int nArguments = ghoul::lua::checkArgumentsAndThrow(L, { 1, 2 }, "lua::addToPath");
-
-        // get target node
-        const std::string& targetNodeIdentifier = ghoul::lua::value<std::string>(L, 1);
-        const SceneGraphNode* targetNode = sceneGraphNode(targetNodeIdentifier);
-
-        if (!targetNode) {
-            lua_settop(L, 0);
-            return ghoul::lua::luaError(
-                L, fmt::format("Could not find node '{}' to target", targetNodeIdentifier)
-            );
-        }
-
-        double duration = (nArguments > 1) ? ghoul::lua::value<double>(L, 2) : 5.0; // TODO set defalt value somwhere better
-
-        if (duration <= 0) {
-            lua_settop(L, 0);
-            return ghoul::lua::luaError(L, "Duration must be larger than zero");
-        }
-
-        AutoNavigationModule* module = global::moduleEngine.module<AutoNavigationModule>();
-        AutoNavigationHandler& handler = module->AutoNavigationHandler();
-        handler.addToPath(targetNode, duration);
-
-        // TODO: Perhaps test if we succeeded?
-
-        lua_settop(L, 0);
-        ghoul_assert(lua_gettop(L) == 0, "Incorrect number of items left on stack");
-        return 0;
-    }
-
-    int startPath(lua_State* L) {
-        ghoul::lua::checkArgumentsAndThrow(L, 0, "lua::startPath");
-
-        AutoNavigationModule* module = global::moduleEngine.module<AutoNavigationModule>();
-        AutoNavigationHandler& handler = module->AutoNavigationHandler();
-
-        handler.startPath();
-
-        lua_settop(L, 0);
-        ghoul_assert(lua_gettop(L) == 0, "Incorrect number of items left on stack");
-        return 0;
-    }
-
-    int clearPath(lua_State* L) {
-        ghoul::lua::checkArgumentsAndThrow(L, 0, "lua::startPath");
-
-        AutoNavigationModule* module = global::moduleEngine.module<AutoNavigationModule>();
-        AutoNavigationHandler& handler = module->AutoNavigationHandler();
-
-        handler.clearPath();
-
-        lua_settop(L, 0);
-        ghoul_assert(lua_gettop(L) == 0, "Incorrect number of items left on stack");
-        return 0;
-    }
-
     int generatePath(lua_State* L) {
         ghoul::lua::checkArgumentsAndThrow(L, 1, "lua::generatePath");
 
