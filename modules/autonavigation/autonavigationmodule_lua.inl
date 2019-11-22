@@ -178,46 +178,37 @@ namespace openspace::autonavigation::luascriptfunctions {
 
         ghoul::Dictionary dictionary;
         ghoul::lua::luaDictionaryFromState(L, dictionary);
+        ghoul::Dictionary instructions = dictionary.value<ghoul::Dictionary>("Instructions"); // TODO Use a key instead
 
-        // Test if we have any instructions
-        ghoul::Dictionary instructions = dictionary.value<ghoul::Dictionary>("Instructions");
-
-        // convert dictionary to array of dictionaries
-        std::vector<ghoul::Dictionary> instructionsArray;
+        // convert dictionary to array of path instructions
+        std::vector<PathInstruction> pathInstructions;
         for (size_t i = 1; i <= instructions.size(); ++i) {
             ghoul::Dictionary ins = instructions.value<ghoul::Dictionary>(std::to_string(i));
-            instructionsArray.push_back(ins);
-        }
-
-        if (instructionsArray.empty()) {
-            lua_settop(L, 0);
-            return ghoul::lua::luaError(
-                L, fmt::format("No instructions for camera path generation were provided.")
-            );
-        }
-
-        // read instructions
-        std::vector<PathInstruction> pathInstructions;
-        for (ghoul::Dictionary dict : instructionsArray) {
-            openspace::documentation::TestResult r =
-                openspace::documentation::testSpecification(PathInstruction::Documentation(), dict);
+            openspace::documentation::TestResult r = openspace::documentation::testSpecification(PathInstruction::Documentation(), ins);
 
             if (!r.success) {
                 lua_settop(L, 0);
                 return ghoul::lua::luaError(
                     L, fmt::format("Could not read instruction: {}", ghoul::to_string(r))
                 );
-            } 
+            }
 
-            pathInstructions.push_back(PathInstruction(dict));
+            pathInstructions.push_back(PathInstruction(ins));
+        }
+
+        if (pathInstructions.empty()) {
+            lua_settop(L, 0);
+            return ghoul::lua::luaError(
+                L, fmt::format("No instructions for camera path generation were provided.")
+            );
         }
 
         AutoNavigationModule* module = global::moduleEngine.module<AutoNavigationModule>();
         AutoNavigationHandler& handler = module->AutoNavigationHandler();
 
         handler.clearPath();
-        // TODO: create path from instructions
         for (auto pi : pathInstructions) {
+            // TODO: process path instructions in AutoNavigationHandler instead
             const SceneGraphNode* targetNode = sceneGraphNode(pi.targetNode);
             double duration = pi.duration;
             if (!targetNode) {
