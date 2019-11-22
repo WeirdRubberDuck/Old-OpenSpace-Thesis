@@ -28,7 +28,7 @@ set(HEADER_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/autonavigationmodule.h
   ${CMAKE_CURRENT_SOURCE_DIR}/autonavigationhandler.h
   ${CMAKE_CURRENT_SOURCE_DIR}/transferfunctions.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/pathinstruction.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/pathspecification.h
 )
 source_group("Header Files" FILES ${HEADER_FILES})
 
@@ -37,7 +37,7 @@ set(SOURCE_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/autonavigationmodule_lua.inl
   ${CMAKE_CURRENT_SOURCE_DIR}/autonavigationhandler.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/transferfunctions.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/pathinstruction.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/pathspecification.cpp
 )
 source_group("Source Files" FILES ${SOURCE_FILES})
 

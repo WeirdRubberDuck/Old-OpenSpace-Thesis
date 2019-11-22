@@ -87,9 +87,8 @@ scripting::LuaLibrary AutoNavigationModule::luaLibrary() const {
             &autonavigation::luascriptfunctions::clearPath,
             {},
             "void",
-            "TODO: Description. Clear the current active path." //TODO also make this one start path from file
+            "TODO: Description. Clear the current active path."
         },
-        // TEST: try creating a path using a dictionary
         {
             "generatePath",
             &autonavigation::luascriptfunctions::generatePath,

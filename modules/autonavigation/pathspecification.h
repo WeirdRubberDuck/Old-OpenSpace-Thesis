@@ -22,71 +22,41 @@
  * OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                                         *
  ****************************************************************************************/
 
-#include <modules/autonavigation/pathinstruction.h>
+#ifndef __OPENSPACE_MODULE___PATHINSTRUCTION___H__
+#define __OPENSPACE_MODULE___PATHINSTRUCTION___H__
 
-#include <openspace/documentation/verifier.h>
-
-namespace {
-    constexpr const char* _loggerCat = "PathInstruction";
-
-    constexpr const char* KeyInstructions = "Instructions";
-    constexpr const char* KeyTarget = "Target";
-    constexpr const char* KeyDuration = "Duration";
-} // namespace
+#include <openspace/documentation/documentation.h>
 
 namespace openspace::autonavigation {
 
-PathInstruction::PathInstruction(const ghoul::Dictionary& dictionary) {
-    const bool hasTarget = dictionary.hasValue<std::string>(KeyTarget);
-    if (!hasTarget) {
-        throw ghoul::RuntimeError(
-            "A camera path instruction requires a target node, to go to or use as reference frame."
-        );
-    }
+class PathSpecification {
 
-    targetNode = dictionary.value<std::string>(KeyTarget);
+public:
+    struct Instruction {
+        Instruction() = default;
+        Instruction(const ghoul::Dictionary& dictionary);
+        Instruction(std::string node, double duration);
 
-    if (dictionary.hasValue<double>(KeyDuration)) {
-        duration = dictionary.value<double>(KeyDuration);
-    } 
-    else {
-        duration = 5.0; // TODO: handle better. 
-    }
-}
+        ghoul::Dictionary dictionary() const;
+        static documentation::Documentation Documentation();
 
-PathInstruction::PathInstruction(std::string node, double duration) 
-    : targetNode(std::move(node)), duration(duration) 
-{}
-
-ghoul::Dictionary PathInstruction::dictionary() const {
-    ghoul::Dictionary instructionDict;
-    instructionDict.setValue(KeyTarget, targetNode);
-    instructionDict.setValue(KeyDuration, duration);
-
-    return instructionDict;
-}
-
-documentation::Documentation PathInstruction::Documentation() {
-    using namespace documentation;
-
-    return {
-        "Path Instruction",
-        "camera_path_instruction",
-        {
-            {
-                KeyTarget,
-                new StringVerifier,
-                Optional::No,
-                "The identifier of the target node."
-            },
-            {
-                KeyDuration,
-                new DoubleVerifier,
-                Optional::Yes,
-                "The desired duration for the camera movement."
-            },
-        }
+        std::string targetNode;
+        double duration;
+        //glm::dvec3 position; // optional? Relative to the node
     };
-}
+
+    PathSpecification() = default;
+    PathSpecification(const ghoul::Dictionary& dictionary);
+    // TODO: create from vector
+
+    // Accessors
+    const std::vector<Instruction>& instructions() const;
+
+private:
+    std::vector<Instruction> _instructions;
+    // TODO: maxSpeed or speedFactor or something?
+};
 
 } // namespace openspace::autonavigation
+
+#endif // __OPENSPACE_CORE___NAVIGATIONHANDLER___H__

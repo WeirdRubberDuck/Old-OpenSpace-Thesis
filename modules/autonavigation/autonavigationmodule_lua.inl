@@ -22,7 +22,7 @@
  * OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                                         *
  ****************************************************************************************/
 
-#include <modules/autonavigation/pathinstruction.h>
+#include <modules/autonavigation/pathspecification.h>
 #include <openspace/engine/globals.h>
 #include <openspace/engine/moduleengine.h>
 #include <openspace/interaction/navigationhandler.h>
@@ -172,31 +172,14 @@ namespace openspace::autonavigation::luascriptfunctions {
         return 0;
     }
 
-    // TEST: try creating a path using a dictionary
     int generatePath(lua_State* L) {
         ghoul::lua::checkArgumentsAndThrow(L, 1, "lua::generatePath");
 
         ghoul::Dictionary dictionary;
         ghoul::lua::luaDictionaryFromState(L, dictionary);
-        ghoul::Dictionary instructions = dictionary.value<ghoul::Dictionary>("Instructions"); // TODO Use a key instead
+        PathSpecification spec(dictionary);
 
-        // convert dictionary to array of path instructions
-        std::vector<PathInstruction> pathInstructions;
-        for (size_t i = 1; i <= instructions.size(); ++i) {
-            ghoul::Dictionary ins = instructions.value<ghoul::Dictionary>(std::to_string(i));
-            openspace::documentation::TestResult r = openspace::documentation::testSpecification(PathInstruction::Documentation(), ins);
-
-            if (!r.success) {
-                lua_settop(L, 0);
-                return ghoul::lua::luaError(
-                    L, fmt::format("Could not read instruction: {}", ghoul::to_string(r))
-                );
-            }
-
-            pathInstructions.push_back(PathInstruction(ins));
-        }
-
-        if (pathInstructions.empty()) {
+        if (spec.instructions().empty()) {
             lua_settop(L, 0);
             return ghoul::lua::luaError(
                 L, fmt::format("No instructions for camera path generation were provided.")
@@ -207,14 +190,14 @@ namespace openspace::autonavigation::luascriptfunctions {
         AutoNavigationHandler& handler = module->AutoNavigationHandler();
 
         handler.clearPath();
-        for (auto pi : pathInstructions) {
+        for (PathSpecification::Instruction ins : spec.instructions()) {
             // TODO: process path instructions in AutoNavigationHandler instead
-            const SceneGraphNode* targetNode = sceneGraphNode(pi.targetNode);
-            double duration = pi.duration;
+            const SceneGraphNode* targetNode = sceneGraphNode(ins.targetNode);
+            double duration = ins.duration;
             if (!targetNode) {
                 lua_settop(L, 0);
                 return ghoul::lua::luaError(
-                    L, fmt::format("Could not find node '{}' to target", pi.targetNode)
+                    L, fmt::format("Could not find node '{}' to target", ins.targetNode)
                 );
             }
             handler.addToPath(targetNode, duration);
