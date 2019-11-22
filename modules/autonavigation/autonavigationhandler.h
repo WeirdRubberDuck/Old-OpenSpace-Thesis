@@ -74,10 +74,10 @@ public:
     void updateCamera(double deltaTime);
     void addToPath(const SceneGraphNode* node, double duration);
     void addToPath(GeoPosition geo, double duration);
-    void addToPath(CameraState endState, double duration);
     void clearPath();
     void startPath();
 
+    // TODO: move these to privates
     glm::dvec3 computeTargetPositionAtNode(const SceneGraphNode* node, 
         const glm::dvec3 prevPos);
 

@@ -149,17 +149,11 @@ void AutoNavigationHandler::addToPath(GeoPosition geo, double duration) {
         glm::dvec3(targetNode->worldRotationMatrix() * cartesianPos);
 
     glm::dvec3 lookAtPos = targetNode->worldPosition();
-    CameraState cs = cameraStateFromTargetPosition(
+    CameraState end = cameraStateFromTargetPosition(
         targetPos, lookAtPos, targetNode->identifier());
 
-    addToPath(cs, duration);
-}
-
-void AutoNavigationHandler::addToPath(CameraState endState, double duration) {
-    ghoul_assert(duration > 0, "Duration must be larger than zero.");
-
     CameraState start = getStartState();
-    addPathSegment(start, endState, duration);
+    addPathSegment(start, end, duration);
 }
 
 void AutoNavigationHandler::clearPath() {
