@@ -28,7 +28,9 @@
 #include <openspace/engine/globals.h>
 #include <openspace/engine/windowdelegate.h>
 #include <openspace/interaction/navigationhandler.h>
+#include <openspace/scene/scenegraphnode.h>
 #include <openspace/util/camera.h>
+#include <openspace/query/query.h>
 #include <ghoul/logging/logmanager.h>
 #include <glm/gtx/vector_angle.hpp>
 #include <glm/gtx/quaternion.hpp>
@@ -88,6 +90,22 @@ PathSegment& AutoNavigationHandler::currentPathSegment() {
             return ps;
         }
     }
+}
+
+void AutoNavigationHandler::createPath(PathSpecification spec) {
+    clearPath();
+    for (PathSpecification::Instruction ins : spec.instructions()) {
+
+        // TODO: process different path instructions
+        const SceneGraphNode* targetNode = sceneGraphNode(ins.targetNode);
+        double duration = ins.duration;
+
+        ghoul_assert(targetNode, fmt::format("Could not find node '{}' to target", ins.targetNode));
+        ghoul_assert(duration > 0, "Cannot create path with negative duration");
+
+        addToPath(targetNode, duration);
+    }
+    startPath();
 }
 
 void AutoNavigationHandler::updateCamera(double deltaTime) {

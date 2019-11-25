@@ -25,6 +25,7 @@
 #ifndef __OPENSPACE_CORE___AUTONAVIGATIONHANDLER___H__
 #define __OPENSPACE_CORE___AUTONAVIGATIONHANDLER___H__
 
+#include <modules/autonavigation/pathspecification.h>
 #include <openspace/interaction/interpolator.h>
 #include <openspace/properties/propertyowner.h>
 #include <openspace/scene/scenegraphnode.h>
@@ -70,6 +71,8 @@ public:
     Camera* camera() const;
     const double pathDuration() const;
     PathSegment& currentPathSegment();
+
+    void createPath(PathSpecification spec);
 
     void updateCamera(double deltaTime);
     void addToPath(const SceneGraphNode* node, double duration);

@@ -49,6 +49,9 @@ public:
     PathSpecification(const ghoul::Dictionary& dictionary);
     PathSpecification(const std::vector<Instruction> instructions);
 
+    ghoul::Dictionary dictionary() const;
+    static documentation::Documentation Documentation();
+
     // Accessors
     const std::vector<Instruction>& instructions() const;
 

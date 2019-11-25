@@ -31,6 +31,8 @@
 #include <openspace/util/camera.h>
 #include <openspace/util/updatestructures.h>
 #include <openspace/query/query.h>
+#include <ghoul/filesystem/file.h>
+#include <ghoul/filesystem/filesystem.h>
 #include <ghoul/logging/logmanager.h>
 #include <glm/gtx/vector_angle.hpp>
 
@@ -130,23 +132,60 @@ namespace openspace::autonavigation::luascriptfunctions {
 
         AutoNavigationModule* module = global::moduleEngine.module<AutoNavigationModule>();
         AutoNavigationHandler& handler = module->AutoNavigationHandler();
-
-        handler.clearPath();
-        for (PathSpecification::Instruction ins : spec.instructions()) {
-            // TODO: process path instructions in AutoNavigationHandler instead
-            const SceneGraphNode* targetNode = sceneGraphNode(ins.targetNode);
-            double duration = ins.duration;
-            if (!targetNode) {
-                lua_settop(L, 0);
-                return ghoul::lua::luaError(
-                    L, fmt::format("Could not find node '{}' to target", ins.targetNode)
-                );
-            }
-            handler.addToPath(targetNode, duration);
-        }
-        handler.startPath();
+        handler.createPath(spec);
 
         lua_settop(L, 0);
+        ghoul_assert(lua_gettop(L) == 0, "Incorrect number of items left on stack");
+        return 0;
+    }
+
+    int generatePathFromFile(lua_State* L) {
+        ghoul::lua::checkArgumentsAndThrow(L, 1, "lua::generatePathFromFile");
+
+        const std::string& filepath = ghoul::lua::value<std::string>(L, 1, ghoul::lua::PopValue::Yes);
+
+        if (filepath.empty()) {
+            return ghoul::lua::luaError(L, "filepath string is empty");
+        }
+
+        const std::string absolutePath = absPath(filepath);
+
+        LINFOC("OpenSpaceEngine", fmt::format("Reading path instructions from file: {}", absolutePath));
+
+        if (!FileSys.fileExists(absolutePath)) {
+            throw ghoul::FileNotFoundError(absolutePath, "PathSpecification");
+        }
+
+        // Try to read the dictionary
+        ghoul::Dictionary dictionary;
+        try {
+            ghoul::lua::loadDictionaryFromFile(absolutePath, dictionary);
+            openspace::documentation::testSpecificationAndThrow(
+                PathSpecification::Documentation(),
+                dictionary,
+                "PathSpecification"
+            );
+        }
+        catch (ghoul::RuntimeError& e) {
+            return ghoul::lua::luaError(
+                L, fmt::format("Unable to read dictionary from file: {}", e.message)
+            );
+        }
+
+        PathSpecification spec(dictionary);
+
+        if (spec.instructions().empty()) {
+            return ghoul::lua::luaError(
+                L, fmt::format("No instructions for camera path generation were provided.")
+            );
+        }
+
+        LINFOC("OpenSpaceEngine", "Reading succeeded. Creating path");
+
+        AutoNavigationModule* module = global::moduleEngine.module<AutoNavigationModule>();
+        AutoNavigationHandler& handler = module->AutoNavigationHandler();
+        handler.createPath(spec);
+
         ghoul_assert(lua_gettop(L) == 0, "Incorrect number of items left on stack");
         return 0;
     }

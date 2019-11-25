@@ -117,5 +117,28 @@ const std::vector<PathSpecification::Instruction>& PathSpecification::instructio
     return _instructions;
 }
 
+ghoul::Dictionary PathSpecification::dictionary() const {
+    ghoul::Dictionary dict;
+    dict.setValue(KeyInstructions, _instructions);
+    return dict;
+}
+
+documentation::Documentation PathSpecification::Documentation() {
+    using namespace documentation;
+
+    return {
+        "Path Specification",
+        "camera_path_specification",
+        {
+            {
+                KeyInstructions,
+                new TableVerifier,
+                Optional::No,
+                "A list of path instructions."
+            },
+        }
+    };
+}
+
 
 } // namespace openspace::autonavigation

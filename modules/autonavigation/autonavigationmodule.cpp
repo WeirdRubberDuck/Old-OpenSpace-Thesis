@@ -73,7 +73,14 @@ scripting::LuaLibrary AutoNavigationModule::luaLibrary() const {
             &autonavigation::luascriptfunctions::generatePath,
             {},
             "table",
-            "TODO: Description. Generate the path described by the lua table." //TODO also make this one start path from file
+            "Generate the path as described by the lua table input argument. TODO: Describe how a path instruction is defined?. " //TODO also make this one start path from file
+        },
+        {
+            "generatePathFromFile",
+            &autonavigation::luascriptfunctions::generatePathFromFile,
+            {},
+            "string",
+            "Read an input file with lua instructions and use those to generate a camera path. TODO: Describe how a path instruction is defined?. " //TODO also make this one start path from file
         }
     };
     return res;  
