@@ -22,8 +22,8 @@
  * OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                                         *
  ****************************************************************************************/
 
-#ifndef __OPENSPACE_CORE___TRANSFERFUNCTIONS___H__
-#define __OPENSPACE_CORE___TRANSFERFUNCTIONS___H__
+#ifndef __OPENSPACE_MODULE___TRANSFERFUNCTIONS___H__
+#define __OPENSPACE_MODULE___TRANSFERFUNCTIONS___H__
 
 namespace openspace::autonavigation::transferfunctions {
 
