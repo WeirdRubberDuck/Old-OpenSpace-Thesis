@@ -150,7 +150,7 @@ namespace openspace::autonavigation::luascriptfunctions {
 
         const std::string absolutePath = absPath(filepath);
 
-        LINFOC("OpenSpaceEngine", fmt::format("Reading path instructions from file: {}", absolutePath));
+        LINFOC("AutoNavigationModule", fmt::format("Reading path instructions from file: {}", absolutePath));
 
         if (!FileSys.fileExists(absolutePath)) {
             throw ghoul::FileNotFoundError(absolutePath, "PathSpecification");
@@ -180,7 +180,7 @@ namespace openspace::autonavigation::luascriptfunctions {
             );
         }
 
-        LINFOC("OpenSpaceEngine", "Reading succeeded. Creating path");
+        LINFOC("AutoNavigationModule", "Reading succeeded. Creating path");
 
         AutoNavigationModule* module = global::moduleEngine.module<AutoNavigationModule>();
         AutoNavigationHandler& handler = module->AutoNavigationHandler();
