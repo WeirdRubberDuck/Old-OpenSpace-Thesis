@@ -22,70 +22,36 @@
  * OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                                         *
  ****************************************************************************************/
 
-#ifndef __OPENSPACE_CORE___AUTONAVIGATIONHANDLER___H__
-#define __OPENSPACE_CORE___AUTONAVIGATIONHANDLER___H__
+#ifndef __OPENSPACE_MODULE___PATHSEGMENT___H__
+#define __OPENSPACE_MODULE___PATHSEGMENT___H__
 
-#include <modules/autonavigation/pathsegment.h>
-#include <modules/autonavigation/pathspecification.h>
-#include <openspace/interaction/interpolator.h>
-#include <openspace/properties/propertyowner.h>
-#include <openspace/scene/scenegraphnode.h>
 #include <ghoul/glm.h>
-
-namespace openspace {
-    class Camera;
-} // namespace openspace
 
 namespace openspace::autonavigation {
 
-struct CameraState;
-
-// TODO: move to its own file?
-struct GeoPosition {
-    double latitude;    // degrees
-    double longitude;   // degrees
-    double height;
-    SceneGraphNode* globe;
-
-    glm::dvec3 toCartesian(); // TODO: move out of struct
+struct CameraState {
+    glm::dvec3 position;
+    glm::dquat rotation;
+    std::string referenceNode;
 };
 
-class AutoNavigationHandler : public properties::PropertyOwner {
+class PathSegment {
 public:
-    AutoNavigationHandler();
-    ~AutoNavigationHandler();
+    PathSegment(CameraState start, CameraState end, double duration, double startTime);
 
-    // Mutators
+    glm::vec3 getPositionAt(double t);
+    glm::dquat getRotationAt(double t);
 
-    // Accessors
-    Camera* camera() const;
-    const double pathDuration() const;
-    PathSegment& currentPathSegment();
+    CameraState start() const; 
+    CameraState end() const;
+    double duration() const; 
+    double startTime() const;  
 
-    void createPath(PathSpecification spec);
-
-    void updateCamera(double deltaTime);
-    void addToPath(const SceneGraphNode* node, double duration);
-    void addToPath(GeoPosition geo, double duration);
-    void clearPath();
-    void startPath();
-
-    // TODO: move these to privates
-    glm::dvec3 computeTargetPositionAtNode(const SceneGraphNode* node, 
-        const glm::dvec3 prevPos);
-
-    CameraState cameraStateFromTargetPosition(glm::dvec3 targetPos, 
-        glm::dvec3 lookAtPos, std::string node);
-
-private:
-    CameraState getStartState();
-    void addPathSegment(CameraState start, CameraState end, double duration);
-
-    std::vector<PathSegment> _pathSegments;
-
-    double _pathDuration;
-    double _currentTime; 
-    bool _isPlaying = false;
+private: 
+    CameraState _start;
+    CameraState _end;
+    double _duration;
+    double _startTime; 
 };
 
 } // namespace openspace::autonavigation

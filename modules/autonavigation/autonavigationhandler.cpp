@@ -85,7 +85,7 @@ const double AutoNavigationHandler::pathDuration() const {
 
 PathSegment& AutoNavigationHandler::currentPathSegment() {
     for (PathSegment& ps : _pathSegments) {
-        double endTime = ps.startTime + ps.duration;
+        double endTime = ps.startTime() + ps.duration();
         if (endTime > _currentTime) {
             return ps;
         }
@@ -116,23 +116,21 @@ void AutoNavigationHandler::updateCamera(double deltaTime) {
     PathSegment cps = currentPathSegment(); 
 
     // INTERPOLATE (TODO: make a function, and allow different methods)
-
-    double t = (_currentTime - cps.startTime) / cps.duration;
+    double t = (_currentTime - cps.startTime()) / cps.duration();
     t = transferfunctions::cubicEaseInOut(t); // TEST
     t = std::max(0.0, std::min(t, 1.0));
 
-    // TODO: don't set every frame and 
+    // TODO: don't set every frame
     // Set anchor node in orbitalNavigator, to render visible nodes and 
     // add possibility to navigate when we reach the end.
-    CameraState cs = (t < 0.5) ? cps.start : cps.end;
+    CameraState cs = (t < 0.5) ? cps.start() : cps.end();
     global::navigationHandler.orbitalNavigator().setAnchorNode(cs.referenceNode);
 
-    // TODO: add different ways to interpolate later
-    glm::dvec3 cameraPosition = cps.start.position * (1.0 - t) + cps.end.position * t;
-    glm::dquat cameraRotation = 
-        glm::slerp(cps.start.rotation, cps.end.rotation, t);
+    // TODO: add different ways to interpolate and separate transfer functions for pos and rot
+    glm::dvec3 cameraPosition = cps.getPositionAt(t);
+    glm::dquat cameraRotation = cps.getRotationAt(t);
 
-    camera()->setPositionVec3(cameraPosition);
+    camera()->setPositionVec3(cameraPosition); 
     camera()->setRotation(cameraRotation);
 
     _currentTime += deltaTime;
@@ -185,7 +183,7 @@ void AutoNavigationHandler::startPath() {
     
     _pathDuration = 0.0;
     for (auto ps : _pathSegments) {
-        _pathDuration += ps.duration;
+        _pathDuration += ps.duration();
     }
     _currentTime = 0.0;
     _isPlaying = true;
@@ -231,7 +229,7 @@ CameraState AutoNavigationHandler::getStartState() {
         cs.referenceNode = global::navigationHandler.anchorNode()->identifier();
     }
     else {
-        cs = _pathSegments.back().end;
+        cs = _pathSegments.back().end();
     }
 
     return cs;
@@ -242,7 +240,7 @@ void AutoNavigationHandler::addPathSegment(CameraState start, CameraState end, d
     double startTime = 0.0;
     if (!_pathSegments.empty()) {
         PathSegment last = _pathSegments.back();
-        startTime = last.startTime + last.duration;
+        startTime = last.startTime() + last.duration();
     }
 
     PathSegment newSegment{ start, end, duration, startTime };
