@@ -94,18 +94,32 @@ PathSegment& AutoNavigationHandler::currentPathSegment() {
 
 void AutoNavigationHandler::createPath(PathSpecification spec) {
     clearPath();
-    for (PathSpecification::Instruction ins : spec.instructions()) {
+    bool success = true;
+    for (int i = 0; i < spec.instructions().size(); i++) {
 
+        PathSpecification::Instruction ins = spec.instructions().at(i);
         // TODO: process different path instructions
+
+        // Read target node instruction (TODO: make a function)
+        if (ins.duration <= 0) {
+            LERROR(fmt::format("Failed creating path segment nr {}. Duration can not be negative.", i+1));
+            success = false;
+            break;
+        }
+
         const SceneGraphNode* targetNode = sceneGraphNode(ins.targetNode);
-        double duration = ins.duration;
-
-        ghoul_assert(targetNode, fmt::format("Could not find node '{}' to target", ins.targetNode));
-        ghoul_assert(duration > 0, "Cannot create path with negative duration");
-
-        addToPath(targetNode, duration);
+        if (!targetNode) {
+            LERROR(fmt::format("Failed creating path segment nr {}. Could not find node '{}' to target", i+1, ins.targetNode));
+            success = false;
+            break;
+        }
+        addToPath(targetNode, ins.duration);
     }
-    startPath();
+
+    if (success) 
+        startPath();
+    else 
+        LINFO("Could not create path.");
 }
 
 void AutoNavigationHandler::updateCamera(double deltaTime) {
