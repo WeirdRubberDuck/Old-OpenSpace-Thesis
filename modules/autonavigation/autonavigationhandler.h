@@ -37,16 +37,6 @@ namespace openspace {
 
 namespace openspace::autonavigation {
 
-// TODO: move to its own file?
-struct GeoPosition {
-    double latitude;    // degrees
-    double longitude;   // degrees
-    double height;
-    SceneGraphNode* globe;
-
-    glm::dvec3 toCartesian(); // TODO: move out of struct
-};
-
 struct CameraState {
     glm::dvec3 position;
     glm::dquat rotation;
@@ -76,7 +66,6 @@ public:
 
     void updateCamera(double deltaTime);
     void addToPath(const SceneGraphNode* node, double duration = 5.0);
-    void addToPath(GeoPosition geo, double duration);
     void clearPath();
     void startPath();
 
@@ -89,7 +78,6 @@ public:
 
 private:
     CameraState getStartState();
-    void addPathSegment(CameraState start, CameraState end, double duration);
 
     std::vector<PathSegment> _pathSegments;
 

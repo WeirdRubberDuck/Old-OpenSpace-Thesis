@@ -73,50 +73,6 @@ namespace openspace::autonavigation::luascriptfunctions {
         return 0;
     }
 
-    int goToSurface(lua_State* L) {
-        int nArguments = ghoul::lua::checkArgumentsAndThrow(L, { 3, 4 }, "lua::goToSurface");
-
-        // Check if the user provided an existing Scene graph node identifier as the first argument.
-        const std::string& globeIdentifier = ghoul::lua::value<std::string>(L, 1);
-        SceneGraphNode* targetNode = sceneGraphNode(globeIdentifier);
-
-        if (!targetNode) {
-            lua_settop(L, 0);
-            return ghoul::lua::luaError(L, "Unknown node name: " + globeIdentifier);
-        }
-
-        // TODO: test if the node is a globe? Or allow any sort of node?
-        // TODO: test different cases!
-
-        AutoNavigationModule* module = global::moduleEngine.module<AutoNavigationModule>();
-        AutoNavigationHandler& handler = module->AutoNavigationHandler();
-
-        double latitude = ghoul::lua::value<double>(L, 2);
-        double longitude = ghoul::lua::value<double>(L, 3);
-
-        // TODO: include height as optional parameter
-        const double radius = targetNode->boundingSphere();
-        const double height = 1.5 * radius; // TODO: should be height over surface
-
-        GeoPosition geoPosition{ latitude, longitude, height, targetNode };
-        
-        // TODO set defalt duration somwhere better or compute from distance
-        double duration = (nArguments > 3) ? ghoul::lua::value<double>(L, 4) : 5.0;
-
-        if (duration <= 0) {
-            lua_settop(L, 0);
-            return ghoul::lua::luaError(L, "Duration must be larger than zero");
-        }
-
-        handler.clearPath();
-        handler.addToPath(geoPosition, duration);
-        handler.startPath();
-
-        lua_settop(L, 0);
-        ghoul_assert(lua_gettop(L) == 0, "Incorrect number of items left on stack");
-        return 0;
-    }
-
     int generatePath(lua_State* L) {
         ghoul::lua::checkArgumentsAndThrow(L, 1, "lua::generatePath");
 

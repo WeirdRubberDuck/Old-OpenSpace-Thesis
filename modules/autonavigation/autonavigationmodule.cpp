@@ -60,15 +60,6 @@ scripting::LuaLibrary AutoNavigationModule::luaLibrary() const {
             "TODO: Description. Go to the node with the given name with optional duration."
         },
         {
-            "goToSurface",
-            &autonavigation::luascriptfunctions::goToSurface,
-            {},
-            "string, number, number, [number]",
-            "TODO: Description. Go to the node with the name given as the first argument. "
-            "The second argument is latitude and the third is longitude (degrees)."
-            "The optional fourth argument is the duration."
-        }, 
-        {
             "generatePath",
             &autonavigation::luascriptfunctions::generatePath,
             {},

@@ -41,31 +41,6 @@ namespace {
 
 namespace openspace::autonavigation {
 
-glm::dvec3 GeoPosition::toCartesian() {
-    ghoul_assert(globe != nullptr, "Globe must not be nullptr");
-
-    // Compute the normal based on the angles
-    const double lat = glm::radians(latitude);
-    const double lon = glm::radians(longitude);
-    const double cosLat = glm::cos(lat);
-    const glm::dvec3 normal = glm::dvec3(
-        cosLat * cos(lon),
-        cosLat * sin(lon),
-        sin(lat)
-    ); // OBS! Should this be normalised?
-
-    const double radius = static_cast<double>(globe->boundingSphere());
-    const glm::dvec3 radVec = glm::dvec3(radius); // OBS! assumes sphere, but should really be an ellipsoid
-
-    const glm::dvec3 k = radVec * normal;
-    const double gamma = sqrt(dot(k, normal));
-    const glm::dvec3 rSurface = k / gamma;
-
-    return rSurface + height * normal; // model space
-}
-
-// ------------------------------------------------------------
-
 AutoNavigationHandler::AutoNavigationHandler()
     : properties::PropertyOwner({ "AutoNavigationHandler" })
 {
@@ -173,24 +148,15 @@ void AutoNavigationHandler::addToPath(const SceneGraphNode* node, const double d
     CameraState end = cameraStateFromTargetPosition(
         targetPos, node->worldPosition(), node->identifier());
 
-    addPathSegment(start, end, duration);
-}
+    // compute startTime 
+    double startTime = 0.0;
+    if (!_pathSegments.empty()) {
+        PathSegment last = _pathSegments.back();
+        startTime = last.startTime + last.duration;
+    }
 
-void AutoNavigationHandler::addToPath(GeoPosition geo, double duration) {
-    ghoul_assert(duration > 0, "Duration must be larger than zero.");
-
-    SceneGraphNode* targetNode = geo.globe;
-    glm::dvec3 cartesianPos = geo.toCartesian();
-
-    glm::dvec3 targetPos = targetNode->worldPosition() +
-        glm::dvec3(targetNode->worldRotationMatrix() * cartesianPos);
-
-    glm::dvec3 lookAtPos = targetNode->worldPosition();
-    CameraState end = cameraStateFromTargetPosition(
-        targetPos, lookAtPos, targetNode->identifier());
-
-    CameraState start = getStartState();
-    addPathSegment(start, end, duration);
+    PathSegment newSegment{ start, end, duration, startTime };
+    _pathSegments.push_back(newSegment);
 }
 
 void AutoNavigationHandler::clearPath() {
@@ -254,18 +220,6 @@ CameraState AutoNavigationHandler::getStartState() {
     }
 
     return cs;
-}
-
-void AutoNavigationHandler::addPathSegment(CameraState start, CameraState end, double duration) {
-    // compute startTime 
-    double startTime = 0.0;
-    if (!_pathSegments.empty()) {
-        PathSegment last = _pathSegments.back();
-        startTime = last.startTime + last.duration;
-    }
-
-    PathSegment newSegment{ start, end, duration, startTime };
-    _pathSegments.push_back(newSegment);
 }
 
 } // namespace openspace::autonavigation
