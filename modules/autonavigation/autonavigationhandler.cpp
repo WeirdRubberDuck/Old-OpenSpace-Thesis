@@ -101,19 +101,24 @@ void AutoNavigationHandler::createPath(PathSpecification spec) {
         // TODO: process different path instructions
 
         // Read target node instruction (TODO: make a function)
-        if (ins.duration <= 0) {
-            LERROR(fmt::format("Failed creating path segment nr {}. Duration can not be negative.", i+1));
+        const SceneGraphNode* targetNode = sceneGraphNode(ins.targetNode);
+        if (!targetNode) {
+            LERROR(fmt::format("Failed creating path segment nr {}. Could not find node '{}' to target", i + 1, ins.targetNode));
             success = false;
             break;
         }
 
-        const SceneGraphNode* targetNode = sceneGraphNode(ins.targetNode);
-        if (!targetNode) {
-            LERROR(fmt::format("Failed creating path segment nr {}. Could not find node '{}' to target", i+1, ins.targetNode));
-            success = false;
-            break;
+        if (ins.duration.has_value()) {
+            if (ins.duration <= 0) {
+                LERROR(fmt::format("Failed creating path segment nr {}. Duration can not be negative.", i + 1));
+                success = false;
+                break;
+            }
+            addToPath(targetNode, ins.duration.value());
         }
-        addToPath(targetNode, ins.duration);
+        else {
+            addToPath(targetNode);
+        }
     }
 
     if (success) 

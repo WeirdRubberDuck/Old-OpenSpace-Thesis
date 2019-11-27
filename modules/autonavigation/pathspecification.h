@@ -26,6 +26,7 @@
 #define __OPENSPACE_MODULE___PATHINSTRUCTION___H__
 
 #include <openspace/documentation/documentation.h>
+#include <optional>
 
 namespace openspace::autonavigation {
 
@@ -35,19 +36,20 @@ public:
     struct Instruction {
         Instruction() = default;
         Instruction(const ghoul::Dictionary& dictionary);
-        Instruction(std::string node, double duration);
+        Instruction(std::string node, std::optional<double> duration = std::nullopt);
 
         ghoul::Dictionary dictionary() const;
         static documentation::Documentation Documentation();
 
         std::string targetNode;
-        double duration;
+        std::optional<double> duration;
         //glm::dvec3 position; // optional? Relative to the node
     };
 
     PathSpecification() = default;
     PathSpecification(const ghoul::Dictionary& dictionary);
     PathSpecification(const std::vector<Instruction> instructions);
+    PathSpecification(const Instruction instruction);
 
     ghoul::Dictionary dictionary() const;
     static documentation::Documentation Documentation();

@@ -38,34 +38,35 @@
 
 namespace openspace::autonavigation::luascriptfunctions {
 
+    const double EPSILON = 1e-12;
+
     int goTo(lua_State* L) {
         int nArguments = ghoul::lua::checkArgumentsAndThrow(L, { 1, 2 }, "lua::goTo");
 
-        // get target node
-        const std::string& targetNodeIdentifier = ghoul::lua::value<std::string>(L, 1);
-        const SceneGraphNode* targetNode = sceneGraphNode(targetNodeIdentifier);
+        const std::string& nodeIdentifier = ghoul::lua::value<std::string>(L, 1);
 
-        if (!targetNode) {
+        if (!sceneGraphNode(nodeIdentifier)) {
             lua_settop(L, 0);
-            return ghoul::lua::luaError(
-                L, fmt::format("Could not find node '{}' to target", targetNodeIdentifier)
-            );
+            return ghoul::lua::luaError(L, "Unknown node name: " + nodeIdentifier);
         }
 
-        // get duration
-        double duration = (nArguments > 1) ? ghoul::lua::value<double>(L, 2) : 5.0; // TODO set defalt value somwhere better
-
-        if (duration <= 0) {
-            lua_settop(L, 0);
-            return ghoul::lua::luaError(L, "Duration must be larger than zero");
+        PathSpecification::Instruction ins;
+        if (nArguments > 1) {
+            double duration = ghoul::lua::value<double>(L, 2);
+            if (duration <= EPSILON) {
+                lua_settop(L, 0);
+                return ghoul::lua::luaError(L, "Duration must be larger than zero.");
+            }
+            ins = PathSpecification::Instruction{ nodeIdentifier, duration };
         }
-        
-        AutoNavigationModule* module = global::moduleEngine.module<AutoNavigationModule>(); // TODO: check if module was found?
+        else {
+            ins = PathSpecification::Instruction{ nodeIdentifier };
+        }
+        PathSpecification spec = PathSpecification(ins);
+
+        AutoNavigationModule* module = global::moduleEngine.module<AutoNavigationModule>(); 
         AutoNavigationHandler& handler = module->AutoNavigationHandler();
-        
-        handler.clearPath();
-        handler.addToPath(targetNode, duration);
-        handler.startPath();
+        handler.createPath(spec);
 
         lua_settop(L, 0);
         ghoul_assert(lua_gettop(L) == 0, "Incorrect number of items left on stack");

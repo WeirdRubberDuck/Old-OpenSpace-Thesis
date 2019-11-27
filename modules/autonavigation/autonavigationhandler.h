@@ -75,7 +75,7 @@ public:
     void createPath(PathSpecification spec);
 
     void updateCamera(double deltaTime);
-    void addToPath(const SceneGraphNode* node, double duration);
+    void addToPath(const SceneGraphNode* node, double duration = 5.0);
     void addToPath(GeoPosition geo, double duration);
     void clearPath();
     void startPath();

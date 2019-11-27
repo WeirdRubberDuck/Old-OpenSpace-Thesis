@@ -54,7 +54,7 @@ PathSpecification::Instruction::Instruction(const ghoul::Dictionary& dictionary)
     }
 }
 
-PathSpecification::Instruction::Instruction(std::string node, double duration)
+PathSpecification::Instruction::Instruction(std::string node, std::optional<double>  duration)
     : targetNode(std::move(node)), duration(duration) 
 {}
 
@@ -112,6 +112,10 @@ PathSpecification::PathSpecification(const ghoul::Dictionary& dictionary) {
 PathSpecification::PathSpecification(const std::vector<Instruction> instructions)
     : _instructions(instructions)
 {}
+
+PathSpecification::PathSpecification(const Instruction instruction) {
+    _instructions.push_back(instruction);
+}
 
 const std::vector<PathSpecification::Instruction>& PathSpecification::instructions() const {
     return _instructions;
