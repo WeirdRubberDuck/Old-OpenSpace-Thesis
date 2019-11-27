@@ -71,8 +71,10 @@ void AutoNavigationHandler::createPath(PathSpecification& spec) {
     clearPath();
     bool success = true;
     for (int i = 0; i < spec.instructions().size(); i++) {
-        PathSpecification::Instruction ins = spec.instructions().at(i);
-        success = createPathSegment(ins, i);
+        PathSpecification::Instruction ins = spec.instructions()[i];
+
+        // TODO: test different types of segments
+        success = readTargetNodeInstruction(ins, i);
         if (!success) break;
     }
 
@@ -202,27 +204,53 @@ CameraState AutoNavigationHandler::getStartState() {
     return cs;
 }
 
-bool AutoNavigationHandler::createPathSegment(PathSpecification::Instruction& instruction, int index) {
+bool AutoNavigationHandler::readTargetNodeInstruction(PathSpecification::Instruction& instruction, int index)
+{
+    CameraState startState, endState;
+    double duration, startTime;
 
-    // TODO: process different types of path instructions
+    startState = getStartState();
 
-    // Read target node instruction 
-    const SceneGraphNode* targetNode = sceneGraphNode(instruction.targetNode);
+    // Compute end state 
+    std::string& identifier = instruction.targetNode;
+    const SceneGraphNode* targetNode = sceneGraphNode(identifier);
     if (!targetNode) {
-        LERROR(fmt::format("Failed creating path segment nr {}. Could not find node '{}' to target", index + 1, instruction.targetNode));
+        LERROR(fmt::format("Failed creating path segment number {}. Could not find node '{}' to target", index + 1, identifier));
         return false;
     }
 
+    glm::dvec3 targetPos = computeTargetPositionAtNode(targetNode, startState.position);
+
+    // TODO: use provided position, if any
+
+    endState = cameraStateFromTargetPosition(
+        targetPos, targetNode->worldPosition(), identifier);
+
+    // compute duration 
     if (instruction.duration.has_value()) {
         if (instruction.duration <= 0) {
-            LERROR(fmt::format("Failed creating path segment nr {}. Duration can not be negative.", index + 1));
+            LERROR(fmt::format("Failed creating path segment number {}. Duration can not be negative.", index + 1));
             return false;
         }
-        addToPath(targetNode, instruction.duration.value());
+        duration = instruction.duration.value();
     }
     else {
-        addToPath(targetNode);
+        // TODO: compute default duration
+        duration = 5.0;
     }
+
+    // compute startTime 
+    startTime = 0.0;
+    if (!_pathSegments.empty()) {
+        PathSegment& last = _pathSegments.back();
+        startTime = last.startTime + last.duration;
+    }
+
+    // create new path
+    _pathSegments.push_back(
+        PathSegment{ startState, endState, duration, startTime }
+    );
+
     return true;
 }
 
