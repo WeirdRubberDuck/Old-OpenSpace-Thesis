@@ -219,9 +219,13 @@ bool AutoNavigationHandler::readTargetNodeInstruction(PathSpecification::Instruc
         return false;
     }
 
-    glm::dvec3 targetPos = computeTargetPositionAtNode(targetNode, startState.position);
-
-    // TODO: use provided position, if any
+    glm::dvec3 targetPos;
+    if (instruction.position.has_value()) {
+        targetPos = targetNode->worldPosition() + instruction.position.value();
+    }
+    else {
+        targetPos = computeTargetPositionAtNode(targetNode, startState.position);
+    }
 
     endState = cameraStateFromTargetPosition(
         targetPos, targetNode->worldPosition(), identifier);
