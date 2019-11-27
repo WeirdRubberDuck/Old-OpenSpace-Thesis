@@ -241,7 +241,7 @@ bool AutoNavigationHandler::readTargetNodeInstruction(PathSpecification::Instruc
     startTime = 0.0;
     if (!_pathSegments.empty()) {
         PathSegment& last = _pathSegments.back();
-        startTime = last.startTime + last.duration;
+        startTime = last.startTime() + last.duration();
     }
 
     // create new path
