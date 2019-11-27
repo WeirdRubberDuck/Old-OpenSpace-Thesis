@@ -65,14 +65,14 @@ public:
     void createPath(PathSpecification spec);
 
     void updateCamera(double deltaTime);
-    void addToPath(const SceneGraphNode* node, double duration = 5.0);
+    void addToPath(const SceneGraphNode* node, double duration = 5.0); // TODO: move to private
     void clearPath();
     void startPath();
 
-    // TODO: move these to privates
+    // TODO: move to privates
     glm::dvec3 computeTargetPositionAtNode(const SceneGraphNode* node, 
         const glm::dvec3 prevPos);
-
+    // TODO: move to privates
     CameraState cameraStateFromTargetPosition(glm::dvec3 targetPos, 
         glm::dvec3 lookAtPos, std::string node);
 
