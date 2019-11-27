@@ -41,31 +41,6 @@ namespace {
 
 namespace openspace::autonavigation {
 
-glm::dvec3 GeoPosition::toCartesian() {
-    ghoul_assert(globe != nullptr, "Globe must not be nullptr");
-
-    // Compute the normal based on the angles
-    const double lat = glm::radians(latitude);
-    const double lon = glm::radians(longitude);
-    const double cosLat = glm::cos(lat);
-    const glm::dvec3 normal = glm::dvec3(
-        cosLat * cos(lon),
-        cosLat * sin(lon),
-        sin(lat)
-    ); // OBS! Should this be normalised?
-
-    const double radius = static_cast<double>(globe->boundingSphere());
-    const glm::dvec3 radVec = glm::dvec3(radius); // OBS! assumes sphere, but should really be an ellipsoid
-
-    const glm::dvec3 k = radVec * normal;
-    const double gamma = sqrt(dot(k, normal));
-    const glm::dvec3 rSurface = k / gamma;
-
-    return rSurface + height * normal; // model space
-}
-
-// ------------------------------------------------------------
-
 AutoNavigationHandler::AutoNavigationHandler()
     : properties::PropertyOwner({ "AutoNavigationHandler" })
 {
@@ -92,20 +67,19 @@ PathSegment& AutoNavigationHandler::currentPathSegment() {
     }
 }
 
-void AutoNavigationHandler::createPath(PathSpecification spec) {
+void AutoNavigationHandler::createPath(PathSpecification& spec) {
     clearPath();
-    for (PathSpecification::Instruction ins : spec.instructions()) {
-
-        // TODO: process different path instructions
-        const SceneGraphNode* targetNode = sceneGraphNode(ins.targetNode);
-        double duration = ins.duration;
-
-        ghoul_assert(targetNode, fmt::format("Could not find node '{}' to target", ins.targetNode));
-        ghoul_assert(duration > 0, "Cannot create path with negative duration");
-
-        addToPath(targetNode, duration);
+    bool success = true;
+    for (int i = 0; i < spec.instructions().size(); i++) {
+        PathSpecification::Instruction ins = spec.instructions().at(i);
+        success = createPathSegment(ins, i);
+        if (!success) break;
     }
-    startPath();
+
+    if (success) 
+        startPath();
+    else 
+        LINFO("Could not create path.");
 }
 
 void AutoNavigationHandler::updateCamera(double deltaTime) {
@@ -152,24 +126,15 @@ void AutoNavigationHandler::addToPath(const SceneGraphNode* node, const double d
     CameraState end = cameraStateFromTargetPosition(
         targetPos, node->worldPosition(), node->identifier());
 
-    addPathSegment(start, end, duration);
-}
+    // compute startTime 
+    double startTime = 0.0;
+    if (!_pathSegments.empty()) {
+        PathSegment last = _pathSegments.back();
+        startTime = last.startTime() + last.duration();
+    }
 
-void AutoNavigationHandler::addToPath(GeoPosition geo, double duration) {
-    ghoul_assert(duration > 0, "Duration must be larger than zero.");
-
-    SceneGraphNode* targetNode = geo.globe;
-    glm::dvec3 cartesianPos = geo.toCartesian();
-
-    glm::dvec3 targetPos = targetNode->worldPosition() +
-        glm::dvec3(targetNode->worldRotationMatrix() * cartesianPos);
-
-    glm::dvec3 lookAtPos = targetNode->worldPosition();
-    CameraState end = cameraStateFromTargetPosition(
-        targetPos, lookAtPos, targetNode->identifier());
-
-    CameraState start = getStartState();
-    addPathSegment(start, end, duration);
+    PathSegment newSegment{ start, end, duration, startTime };
+    _pathSegments.push_back(newSegment);
 }
 
 void AutoNavigationHandler::clearPath() {
@@ -235,16 +200,28 @@ CameraState AutoNavigationHandler::getStartState() {
     return cs;
 }
 
-void AutoNavigationHandler::addPathSegment(CameraState start, CameraState end, double duration) {
-    // compute startTime 
-    double startTime = 0.0;
-    if (!_pathSegments.empty()) {
-        PathSegment last = _pathSegments.back();
-        startTime = last.startTime() + last.duration();
+bool AutoNavigationHandler::createPathSegment(PathSpecification::Instruction& instruction, int index) {
+
+    // TODO: process different types of path instructions
+
+    // Read target node instruction 
+    const SceneGraphNode* targetNode = sceneGraphNode(instruction.targetNode);
+    if (!targetNode) {
+        LERROR(fmt::format("Failed creating path segment nr {}. Could not find node '{}' to target", index + 1, instruction.targetNode));
+        return false;
     }
 
-    PathSegment newSegment{ start, end, duration, startTime };
-    _pathSegments.push_back(newSegment);
+    if (instruction.duration.has_value()) {
+        if (instruction.duration <= 0) {
+            LERROR(fmt::format("Failed creating path segment nr {}. Duration can not be negative.", index + 1));
+            return false;
+        }
+        addToPath(targetNode, instruction.duration.value());
+    }
+    else {
+        addToPath(targetNode);
+    }
+    return true;
 }
 
 } // namespace openspace::autonavigation

@@ -22,8 +22,8 @@
  * OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                                         *
  ****************************************************************************************/
 
-#ifndef __OPENSPACE_CORE___AUTONAVIGATIONHANDLER___H__
-#define __OPENSPACE_CORE___AUTONAVIGATIONHANDLER___H__
+#ifndef __OPENSPACE_MODULE___AUTONAVIGATIONHANDLER___H__
+#define __OPENSPACE_MODULE___AUTONAVIGATIONHANDLER___H__
 
 #include <modules/autonavigation/pathsegment.h>
 #include <modules/autonavigation/pathspecification.h>
@@ -40,16 +40,6 @@ namespace openspace::autonavigation {
 
 struct CameraState;
 
-// TODO: move to its own file?
-struct GeoPosition {
-    double latitude;    // degrees
-    double longitude;   // degrees
-    double height;
-    SceneGraphNode* globe;
-
-    glm::dvec3 toCartesian(); // TODO: move out of struct
-};
-
 class AutoNavigationHandler : public properties::PropertyOwner {
 public:
     AutoNavigationHandler();
@@ -62,24 +52,25 @@ public:
     const double pathDuration() const;
     PathSegment& currentPathSegment();
 
-    void createPath(PathSpecification spec);
+    void createPath(PathSpecification& spec);
 
     void updateCamera(double deltaTime);
-    void addToPath(const SceneGraphNode* node, double duration);
-    void addToPath(GeoPosition geo, double duration);
+    void addToPath(const SceneGraphNode* node, double duration = 5.0); // TODO: move to private
     void clearPath();
     void startPath();
 
-    // TODO: move these to privates
+    // TODO: move to privates
     glm::dvec3 computeTargetPositionAtNode(const SceneGraphNode* node, 
         const glm::dvec3 prevPos);
-
+    // TODO: move to privates
     CameraState cameraStateFromTargetPosition(glm::dvec3 targetPos, 
         glm::dvec3 lookAtPos, std::string node);
 
 private:
     CameraState getStartState();
-    void addPathSegment(CameraState start, CameraState end, double duration);
+
+    // create a path segment, return true if sucessful
+    bool createPathSegment(PathSpecification::Instruction& instruction, int index);
 
     std::vector<PathSegment> _pathSegments;
 
