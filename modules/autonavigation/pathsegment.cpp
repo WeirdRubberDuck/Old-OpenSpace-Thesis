@@ -51,12 +51,16 @@ glm::dquat PathSegment::getRotationAt(double t) {
 //TODO: generate something that looks good! 
 void PathSegment::setBezierPoints() {
     glm::dvec3 startNodePos = sceneGraphNode(_start.referenceNode)->worldPosition();
-    glm::dvec3 startDirection = _start.position - startNodePos; //away from node
+    glm::dvec3 endNodePos = sceneGraphNode(_end.referenceNode)->worldPosition();
+    // vectors pointing away from target nodes
+    glm::dvec3 startDirection =_start.position - startNodePos; 
+    glm::dvec3 endDirection = _end.position - endNodePos; 
 
+    // TODO: create better control points!
     // Four control points for cubic bezier
     _controlPoints.push_back(_start.position);
     _controlPoints.push_back(_start.position + 10.0 * startDirection);
-    _controlPoints.push_back(_end.position);
+    _controlPoints.push_back(_end.position + 10.0 * endDirection);
     _controlPoints.push_back(_end.position);
 }
 
