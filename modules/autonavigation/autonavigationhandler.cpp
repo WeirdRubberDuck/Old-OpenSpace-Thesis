@@ -67,33 +67,13 @@ PathSegment& AutoNavigationHandler::currentPathSegment() {
     }
 }
 
-void AutoNavigationHandler::createPath(PathSpecification spec) {
+void AutoNavigationHandler::createPath(PathSpecification& spec) {
     clearPath();
     bool success = true;
     for (int i = 0; i < spec.instructions().size(); i++) {
-
         PathSpecification::Instruction ins = spec.instructions().at(i);
-        // TODO: process different path instructions
-
-        // Read target node instruction (TODO: make a function)
-        const SceneGraphNode* targetNode = sceneGraphNode(ins.targetNode);
-        if (!targetNode) {
-            LERROR(fmt::format("Failed creating path segment nr {}. Could not find node '{}' to target", i + 1, ins.targetNode));
-            success = false;
-            break;
-        }
-
-        if (ins.duration.has_value()) {
-            if (ins.duration <= 0) {
-                LERROR(fmt::format("Failed creating path segment nr {}. Duration can not be negative.", i + 1));
-                success = false;
-                break;
-            }
-            addToPath(targetNode, ins.duration.value());
-        }
-        else {
-            addToPath(targetNode);
-        }
+        success = createPathSegment(ins, i);
+        if (!success) break;
     }
 
     if (success) 
@@ -220,6 +200,30 @@ CameraState AutoNavigationHandler::getStartState() {
     }
 
     return cs;
+}
+
+bool AutoNavigationHandler::createPathSegment(PathSpecification::Instruction& instruction, int index) {
+
+    // TODO: process different types of path instructions
+
+    // Read target node instruction 
+    const SceneGraphNode* targetNode = sceneGraphNode(instruction.targetNode);
+    if (!targetNode) {
+        LERROR(fmt::format("Failed creating path segment nr {}. Could not find node '{}' to target", index + 1, instruction.targetNode));
+        return false;
+    }
+
+    if (instruction.duration.has_value()) {
+        if (instruction.duration <= 0) {
+            LERROR(fmt::format("Failed creating path segment nr {}. Duration can not be negative.", index + 1));
+            return false;
+        }
+        addToPath(targetNode, instruction.duration.value());
+    }
+    else {
+        addToPath(targetNode);
+    }
+    return true;
 }
 
 } // namespace openspace::autonavigation

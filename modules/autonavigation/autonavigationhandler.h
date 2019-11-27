@@ -62,7 +62,7 @@ public:
     const double pathDuration() const;
     PathSegment& currentPathSegment();
 
-    void createPath(PathSpecification spec);
+    void createPath(PathSpecification& spec);
 
     void updateCamera(double deltaTime);
     void addToPath(const SceneGraphNode* node, double duration = 5.0); // TODO: move to private
@@ -78,6 +78,9 @@ public:
 
 private:
     CameraState getStartState();
+
+    // create a path segment, return true if sucessful
+    bool createPathSegment(PathSpecification::Instruction& instruction, int index);
 
     std::vector<PathSegment> _pathSegments;
 
