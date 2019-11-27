@@ -69,8 +69,7 @@ public:
 private:
     CameraState getStartState();
 
-    // create a path segment, return true if sucessful
-    bool createPathSegment(PathSpecification::Instruction& instruction, int index);
+    bool readTargetNodeInstruction(PathSpecification::Instruction& instruction, int index);
 
     std::vector<PathSegment> _pathSegments;
 
