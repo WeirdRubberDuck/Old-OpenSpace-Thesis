@@ -159,14 +159,22 @@ void AutoNavigationHandler::startPath() {
 }
 
 glm::dvec3 AutoNavigationHandler::computeTargetPositionAtNode(
-    const SceneGraphNode* node, glm::dvec3 prevPos) 
+    const SceneGraphNode* node, glm::dvec3 prevPos, std::optional<double> height) 
 {
     glm::dvec3 targetPos = node->worldPosition();
     glm::dvec3 targetToPrevVector = prevPos - targetPos;
 
-    // TODO: let the user input this? Or control this in a more clever fashion
     double radius = static_cast<double>(node->boundingSphere());
-    double desiredDistance = 2 * radius;
+
+    double desiredDistance;
+    if (height.has_value()) {
+        desiredDistance = height.value();
+    } 
+    else {
+        desiredDistance = 2 * radius;
+    }
+
+    // TODO: compute actual distance above surface and validate negative values
 
     // move target position out from surface, along vector to camera
     targetPos += glm::normalize(targetToPrevVector) * (radius + desiredDistance);
@@ -224,7 +232,11 @@ bool AutoNavigationHandler::readTargetNodeInstruction(PathSpecification::Instruc
         targetPos = targetNode->worldPosition() + instruction.position.value();
     }
     else {
-        targetPos = computeTargetPositionAtNode(targetNode, startState.position);
+        targetPos = computeTargetPositionAtNode(
+            targetNode, 
+            startState.position, 
+            instruction.height
+        );
     }
 
     endState = cameraStateFromTargetPosition(

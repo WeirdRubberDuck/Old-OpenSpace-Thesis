@@ -39,7 +39,8 @@ public:
         Instruction(const ghoul::Dictionary& dictionary);
         Instruction(std::string node, 
             std::optional<double> duration = std::nullopt,
-            std::optional<glm::dvec3> position = std::nullopt);
+            std::optional<glm::dvec3> position = std::nullopt, 
+            std::optional<double> height = std::nullopt);
 
         ghoul::Dictionary dictionary() const;
         static documentation::Documentation Documentation();
@@ -47,6 +48,7 @@ public:
         std::string targetNode;
         std::optional<double> duration;
         std::optional<glm::dvec3> position; // relative to target node (model space)
+        std::optional<double> height;
     };
 
     PathSpecification() = default;

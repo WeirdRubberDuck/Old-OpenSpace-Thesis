@@ -71,7 +71,7 @@ public:
 
     // TODO: move to privates
     glm::dvec3 computeTargetPositionAtNode(const SceneGraphNode* node, 
-        const glm::dvec3 prevPos);
+        const glm::dvec3 prevPos, std::optional<double> height = std::nullopt);
     // TODO: move to privates
     CameraState cameraStateFromTargetPosition(glm::dvec3 targetPos, 
         glm::dvec3 lookAtPos, std::string node);
