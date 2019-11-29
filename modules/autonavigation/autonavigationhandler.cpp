@@ -119,7 +119,7 @@ void AutoNavigationHandler::updateCamera(double deltaTime) {
         // TODO: implement suitable stop behaviour
     }
 }
-
+//TODO: remove! No londer used
 void AutoNavigationHandler::addToPath(const SceneGraphNode* node, const double duration) {
     ghoul_assert(node != nullptr, "Target node must not be nullptr");
     ghoul_assert(duration > 0, "Duration must be larger than zero.");

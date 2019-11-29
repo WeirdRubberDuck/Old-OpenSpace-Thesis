@@ -65,7 +65,7 @@ public:
     void createPath(PathSpecification& spec);
 
     void updateCamera(double deltaTime);
-    void addToPath(const SceneGraphNode* node, double duration = 5.0); // TODO: move to private
+    void addToPath(const SceneGraphNode* node, double duration = 5.0); // TODO: remove
     void clearPath();
     void startPath();
 
