@@ -229,7 +229,9 @@ bool AutoNavigationHandler::readTargetNodeInstruction(PathSpecification::Instruc
 
     glm::dvec3 targetPos;
     if (instruction.position.has_value()) {
-        targetPos = targetNode->worldPosition() + instruction.position.value();
+        // note that the anchor and reference frame is our targetnode. 
+        // The position in instruction is given is relative coordinates.
+        targetPos = targetNode->worldPosition() + targetNode->worldRotationMatrix() * instruction.position.value();
     }
     else {
         targetPos = computeTargetPositionAtNode(
