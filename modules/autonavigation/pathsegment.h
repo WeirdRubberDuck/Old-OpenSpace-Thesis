@@ -28,6 +28,7 @@
 #include <ghoul/glm.h>
 #include <vector>
 
+
 namespace openspace::autonavigation {
 
 struct CameraState {
@@ -36,32 +37,37 @@ struct CameraState {
     std::string referenceNode;
 };
 
-enum curveType {bezier, linear};
-// TODO: another enum for orientation interpolation options?
+enum CurveType {
+    Bezier, 
+    Linear
+};
+
+// TODO: another enum for orientation interpolation options
 
 class PathSegment {
 public:
-    PathSegment(CameraState start, CameraState end, double duration, double startTime, curveType type = bezier);
+    PathSegment(CameraState start, CameraState end, double duration, double startTime, CurveType type = Bezier);
+
+    CameraState start() const;
+    CameraState end() const;
+    double duration() const;
+    double startTime() const;
+
     glm::vec3 getPositionAt(double t);
     glm::dquat getRotationAt(double t);
 
-    void setBezierPoints();
-    glm::dvec3 getBezierPositionAt(double t);
-
-    CameraState start() const; 
-    CameraState end() const;
-    double duration() const; 
-    double startTime() const;  
-
 private: 
+    void generateBezier();
+    glm::dvec3 interpolateBezier(double t);
+
     CameraState _start;
     CameraState _end;
     double _duration;
     double _startTime; 
-    curveType _posCurveType; 
+    CurveType _curveType; 
     std::vector<glm::dvec3> _controlPoints;
 };
 
 } // namespace openspace::autonavigation
 
-#endif // __OPENSPACE_CORE___PATHSEGMENT___H__
+#endif // __OPENSPACE_MODULE___PATHSEGMENT___H__

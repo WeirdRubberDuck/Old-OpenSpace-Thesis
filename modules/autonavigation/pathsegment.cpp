@@ -26,22 +26,49 @@
 
 #include <openspace/scene/scenegraphnode.h>
 #include <openspace/query/query.h>
+#include <ghoul/Misc/interpolator.h>
+#include <ghoul/logging/logmanager.h>
+
+namespace {
+    constexpr const char* _loggerCat = "PathSegment";
+} // namespace
 
 namespace openspace::autonavigation {
 
 PathSegment::PathSegment(
-    CameraState start, CameraState end, double duration, double startTime, curveType type)
-    : _start(start), _end(end), _duration(duration), _startTime(startTime), _posCurveType(type)
+    CameraState start, CameraState end, double duration, double startTime, CurveType type)
+    : _start(start), _end(end), _duration(duration), _startTime(startTime), _curveType(type)
 { 
-    if (_posCurveType == bezier)
-        setBezierPoints();
+    switch(_curveType) {
+    case Bezier:
+        generateBezier();
+        break;
+    case Linear:
+        break;
+    default:
+        LERROR(fmt::format("Cannot create curve of type {}. Type does not exist!", _curveType));
+    }  
 }
 
+CameraState PathSegment::start() const { return _start; }
+
+CameraState PathSegment::end() const { return _end; }
+
+double PathSegment::duration() const { return _duration; }
+
+double PathSegment::startTime() const { return _startTime; }
+
 glm::vec3 PathSegment::getPositionAt(double t) {
-    if( _posCurveType == bezier )
-        return getBezierPositionAt(t);
-    else 
-        return _start.position * (1.0 - t) + _end.position * t;
+    switch(_curveType) {
+    case Bezier: 
+        return interpolateBezier(t); //TODO: use helper function when created
+        break;
+    case Linear:
+        return ghoul::interpolateLinear(t, _start.position, _end.position);
+        break;
+    default:
+        LERROR(fmt::format("Cannot get position for curve type {}. Type does not exist!", _curveType));
+    }        
 }
 
 glm::dquat PathSegment::getRotationAt(double t) {
@@ -49,7 +76,7 @@ glm::dquat PathSegment::getRotationAt(double t) {
 }
 
 //TODO: generate something that looks good! 
-void PathSegment::setBezierPoints() {
+void PathSegment::generateBezier() {
     glm::dvec3 startNodePos = sceneGraphNode(_start.referenceNode)->worldPosition();
     glm::dvec3 endNodePos = sceneGraphNode(_end.referenceNode)->worldPosition();
     // vectors pointing away from target nodes
@@ -64,20 +91,13 @@ void PathSegment::setBezierPoints() {
     _controlPoints.push_back(_end.position);
 }
 
-glm::dvec3 PathSegment::getBezierPositionAt(double t) {
+// TODO: Create a more general helper function and use instead
+glm::dvec3 PathSegment::interpolateBezier(double t) { 
     double a = 1.0 - t;
     return _controlPoints[0] * a * a * a
             + _controlPoints[1] * t * a * a * 3.0
             + _controlPoints[2] * t * t * a * 3.0
             + _controlPoints[3] * t * t * t;
 }
-
-CameraState PathSegment::start() const { return _start; }
-
-CameraState PathSegment::end() const { return _end; }
-
-double PathSegment::duration() const { return _duration; }
-
-double PathSegment::startTime() const { return _startTime; }
 
 } // namespace openspace::autonavigation
