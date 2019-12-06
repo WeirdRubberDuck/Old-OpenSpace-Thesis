@@ -70,12 +70,12 @@ PathSegment& AutoNavigationHandler::currentPathSegment() {
 void AutoNavigationHandler::createPath(PathSpecification& spec) {
     clearPath();
     bool success = true;
-    for (int i = 0; i < spec.instructions().size(); i++) {
-        PathSpecification::Instruction ins = spec.instructions()[i];
+    for (int i = 0; i < spec.instructions()->size(); i++) {
+        const Instruction& ins = spec.instructions()->at(i);
+        success = handleInstruction(ins, i);
 
-        // TODO: test different types of segments
-        success = readTargetNodeInstruction(ins, i);
-        if (!success) break;
+        if (!success) 
+            break;
     }
 
     if (success) 
@@ -212,45 +212,44 @@ CameraState AutoNavigationHandler::getStartState() {
     return cs;
 }
 
-bool AutoNavigationHandler::readTargetNodeInstruction(PathSpecification::Instruction& instruction, int index)
+bool AutoNavigationHandler::handleInstruction(const Instruction& instruction, int index)
 {
     CameraState startState, endState;
     double duration, startTime;
+    bool success = true;
 
     startState = getStartState();
 
-    // Compute end state 
-    std::string& identifier = instruction.targetNode;
-    const SceneGraphNode* targetNode = sceneGraphNode(identifier);
-    if (!targetNode) {
-        LERROR(fmt::format("Failed creating path segment number {}. Could not find node '{}' to target", index + 1, identifier));
-        return false;
-    }
-
-    glm::dvec3 targetPos;
-    if (instruction.position.has_value()) {
-        // note that the anchor and reference frame is our targetnode. 
-        // The position in instruction is given is relative coordinates.
-        targetPos = targetNode->worldPosition() + targetNode->worldRotationMatrix() * instruction.position.value();
-    }
-    else {
-        targetPos = computeTargetPositionAtNode(
-            targetNode, 
-            startState.position, 
-            instruction.height
+    switch (instruction.type)
+    {
+    case InstructionType::TargetNode:
+        LINFO("Handle target node instruction");
+        success = endFromTargetNodeInstruction(
+            endState, startState, instruction, index
         );
+        break;
+
+    case InstructionType::NavigationState:
+        LINFO("Handle navigation state instruction");
+        success = endFromNavigationStateInstruction(
+            endState, instruction, index
+        );
+        break;
+
+    default:
+        // TODO: error message
+        break;
     }
 
-    endState = cameraStateFromTargetPosition(
-        targetPos, targetNode->worldPosition(), identifier);
+    if (!success) return false;
 
     // compute duration 
-    if (instruction.duration.has_value()) {
-        if (instruction.duration <= 0) {
+    if (instruction.props->duration.has_value()) {
+        duration = instruction.props->duration.value();
+        if (duration <= 0) {
             LERROR(fmt::format("Failed creating path segment number {}. Duration can not be negative.", index + 1));
             return false;
         }
-        duration = instruction.duration.value();
     }
     else {
         // TODO: compute default duration
@@ -269,6 +268,96 @@ bool AutoNavigationHandler::readTargetNodeInstruction(PathSpecification::Instruc
         PathSegment{ startState, endState, duration, startTime }
     );
 
+    return true;
+}
+
+bool AutoNavigationHandler::endFromTargetNodeInstruction(
+    CameraState& endState, CameraState& prevState, const Instruction& instruction, int index)
+{
+    TargetNodeInstructionProps* props = 
+        dynamic_cast<TargetNodeInstructionProps*>(instruction.props.get());
+
+    if (!props) {
+        LERROR(fmt::format("Could not handle target node instruction (number {}).", index + 1));
+        return false;
+    }
+
+    // Compute end state 
+    std::string& identifier = props->targetNode;
+    const SceneGraphNode* targetNode = sceneGraphNode(identifier);
+    if (!targetNode) {
+        LERROR(fmt::format("Failed handling instruction number {}. Could not find node '{}' to target", index + 1, identifier));
+        return false;
+    }
+
+    glm::dvec3 targetPos;
+    if (props->position.has_value()) {
+        // note that the anchor and reference frame is our targetnode. 
+        // The position in instruction is given is relative coordinates.
+        targetPos = targetNode->worldPosition() + targetNode->worldRotationMatrix() * props->position.value();
+    }
+    else {
+        targetPos = computeTargetPositionAtNode(
+            targetNode, 
+            prevState.position, 
+            props->height
+        );
+    }
+
+    endState = cameraStateFromTargetPosition(
+        targetPos, targetNode->worldPosition(), identifier);
+
+    return true;
+}
+
+bool AutoNavigationHandler::endFromNavigationStateInstruction(
+    CameraState& endState, const Instruction& instruction, int index)
+{
+    NavigationStateInstructionProps* props =
+        dynamic_cast<NavigationStateInstructionProps*>(instruction.props.get());
+
+    if (!props) {
+        LERROR(fmt::format("Could not handle navigation state instruction (number {}).", index + 1));
+        return false;
+    }
+
+    interaction::NavigationHandler::NavigationState ns = props->navState;
+
+    // OBS! The following code is exactly the same as used in NavigationHandler::applyNavigationState. Should probably be made into a function.
+    const SceneGraphNode* referenceFrame = sceneGraphNode(ns.referenceFrame);
+    const SceneGraphNode* anchorNode = sceneGraphNode(ns.anchor); // The anchor is also the target
+
+    if (!anchorNode) {
+        LERROR(fmt::format("Failed handling instruction number {}. Could not find node '{}' to target", index + 1, ns.anchor));
+        return false;
+    }
+
+    const glm::dvec3 anchorWorldPosition = anchorNode->worldPosition();
+    const glm::dmat3 referenceFrameTransform = referenceFrame->worldRotationMatrix();
+
+    const glm::dvec3 targetPositionWorld = anchorWorldPosition +
+        glm::dvec3(referenceFrameTransform * glm::dvec4(ns.position, 1.0));
+
+    glm::dvec3 up = ns.up.has_value() ?
+        glm::normalize(referenceFrameTransform * ns.up.value()) :
+        glm::dvec3(0.0, 1.0, 0.0);
+
+    // Construct vectors of a "neutral" view, i.e. when the aim is centered in view.
+    glm::dvec3 neutralView =
+        glm::normalize(anchorWorldPosition - targetPositionWorld);
+
+    glm::dquat neutralCameraRotation = glm::inverse(glm::quat_cast(glm::lookAt(
+        glm::dvec3(0.0),
+        neutralView,
+        up
+    )));
+
+    glm::dquat pitchRotation = glm::angleAxis(ns.pitch, glm::dvec3(1.f, 0.f, 0.f));
+    glm::dquat yawRotation = glm::angleAxis(ns.yaw, glm::dvec3(0.f, -1.f, 0.f));
+
+    glm::quat targetRotation = neutralCameraRotation * yawRotation * pitchRotation;
+
+    endState = CameraState{ targetPositionWorld, targetRotation, ns.anchor };
     return true;
 }
 
