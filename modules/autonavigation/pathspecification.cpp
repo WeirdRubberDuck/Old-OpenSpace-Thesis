@@ -32,6 +32,8 @@ namespace {
     constexpr const char* KeyInstructions = "Instructions";
     constexpr const char* KeyTarget = "Target";
     constexpr const char* KeyDuration = "Duration";
+    constexpr const char* KeyPosition = "Position";
+    constexpr const char* KeyHeight = "Height";
 } // namespace
 
 namespace openspace::autonavigation {
@@ -49,20 +51,31 @@ PathSpecification::Instruction::Instruction(const ghoul::Dictionary& dictionary)
     if (dictionary.hasValue<double>(KeyDuration)) {
         duration = dictionary.value<double>(KeyDuration);
     } 
-    else {
-        duration = 5.0; // TODO: handle better. 
+
+    if (dictionary.hasValue<glm::dvec3>(KeyPosition)) {
+        position = dictionary.value<glm::dvec3>(KeyPosition);
+    }
+
+    if (dictionary.hasValue<double>(KeyHeight)) {
+        height = dictionary.value<double>(KeyHeight);
     }
 }
 
-PathSpecification::Instruction::Instruction(std::string node, std::optional<double>  duration)
-    : targetNode(std::move(node)), duration(duration) 
+PathSpecification::Instruction::Instruction(std::string node, 
+    std::optional<double> duration,  std::optional<glm::dvec3> position, 
+    std::optional<double> height)
+    : targetNode(std::move(node))
+    , duration(duration)
+    , position(position)
+    , height(height)
 {}
 
 ghoul::Dictionary PathSpecification::Instruction::dictionary() const {
     ghoul::Dictionary instructionDict;
     instructionDict.setValue(KeyTarget, targetNode);
     instructionDict.setValue(KeyDuration, duration);
-
+    instructionDict.setValue(KeyPosition, position);
+    instructionDict.setValue(KeyHeight, height);
     return instructionDict;
 }
 
@@ -84,6 +97,18 @@ documentation::Documentation PathSpecification::Instruction::Documentation() {
                 new DoubleVerifier,
                 Optional::Yes,
                 "The desired duration for the camera movement."
+            },
+            {
+                KeyPosition,
+                new Vector3Verifier<double>,
+                Optional::Yes,
+                "The desired final position for the camera movement, given in model space."
+            },
+            {
+                KeyHeight,
+                new DoubleVerifier,
+                Optional::Yes,
+                "The desired height from surface for final position (meters). Will be ignored if a target position is set. "
             },
         }
     };

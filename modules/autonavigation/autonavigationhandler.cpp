@@ -117,7 +117,7 @@ void AutoNavigationHandler::updateCamera(double deltaTime) {
         // TODO: implement suitable stop behaviour
     }
 }
-
+//TODO: remove! No londer used
 void AutoNavigationHandler::addToPath(const SceneGraphNode* node, const double duration) {
     ghoul_assert(node != nullptr, "Target node must not be nullptr");
     ghoul_assert(duration > 0, "Duration must be larger than zero.");
@@ -157,14 +157,22 @@ void AutoNavigationHandler::startPath() {
 }
 
 glm::dvec3 AutoNavigationHandler::computeTargetPositionAtNode(
-    const SceneGraphNode* node, glm::dvec3 prevPos) 
+    const SceneGraphNode* node, glm::dvec3 prevPos, std::optional<double> height) 
 {
     glm::dvec3 targetPos = node->worldPosition();
     glm::dvec3 targetToPrevVector = prevPos - targetPos;
 
-    // TODO: let the user input this? Or control this in a more clever fashion
     double radius = static_cast<double>(node->boundingSphere());
-    double desiredDistance = 2 * radius;
+
+    double desiredDistance;
+    if (height.has_value()) {
+        desiredDistance = height.value();
+    } 
+    else {
+        desiredDistance = 2 * radius;
+    }
+
+    // TODO: compute actual distance above surface and validate negative values
 
     // move target position out from surface, along vector to camera
     targetPos += glm::normalize(targetToPrevVector) * (radius + desiredDistance);
@@ -217,9 +225,19 @@ bool AutoNavigationHandler::readTargetNodeInstruction(PathSpecification::Instruc
         return false;
     }
 
-    glm::dvec3 targetPos = computeTargetPositionAtNode(targetNode, startState.position);
-
-    // TODO: use provided position, if any
+    glm::dvec3 targetPos;
+    if (instruction.position.has_value()) {
+        // note that the anchor and reference frame is our targetnode. 
+        // The position in instruction is given is relative coordinates.
+        targetPos = targetNode->worldPosition() + targetNode->worldRotationMatrix() * instruction.position.value();
+    }
+    else {
+        targetPos = computeTargetPositionAtNode(
+            targetNode, 
+            startState.position, 
+            instruction.height
+        );
+    }
 
     endState = cameraStateFromTargetPosition(
         targetPos, targetNode->worldPosition(), identifier);
