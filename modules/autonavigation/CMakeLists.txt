@@ -27,7 +27,7 @@ include(${OPENSPACE_CMAKE_EXT_DIR}/module_definition.cmake)
 set(HEADER_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/autonavigationmodule.h
   ${CMAKE_CURRENT_SOURCE_DIR}/autonavigationhandler.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/transferfunctions.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/helperfunctions.h
   ${CMAKE_CURRENT_SOURCE_DIR}/pathspecification.h
   ${CMAKE_CURRENT_SOURCE_DIR}/pathsegment.h
 )
@@ -37,7 +37,7 @@ set(SOURCE_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/autonavigationmodule.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/autonavigationmodule_lua.inl
   ${CMAKE_CURRENT_SOURCE_DIR}/autonavigationhandler.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/transferfunctions.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/helperfunctions.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/pathspecification.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/pathsegment.cpp
 )

@@ -22,11 +22,11 @@
  * OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                                         *
  ****************************************************************************************/
 
-#include <modules/autonavigation/transferfunctions.h>
+#include <modules/autonavigation/helperfunctions.h>
 
 #include <ghoul/glm.h>
 
-namespace openspace::autonavigation::transferfunctions {
+namespace openspace::autonavigation::easingfunctions {
 
 double linear(double t) { return t; };
 
@@ -41,7 +41,7 @@ double cubicEaseIn(double t) { return (t*t*t); };
 double cubicEaseOut(double t) {
     double p = 1 - t;
     return (p*p*p);
-};
+}
 
 double cubicEaseInOut(double t) {
     if (t < 0.5) {
@@ -51,7 +51,7 @@ double cubicEaseInOut(double t) {
         double f = ((2 * t) - 2);
         return 0.5 * f * f * f + 1;
     }
-};
+}
 
 double quadraticEaseInOut(double t) {
     if (t < 0.5) {
@@ -71,6 +71,11 @@ double exponentialEaseInOut(double t) {
     else {
         return -0.5 * glm::pow(2, (-20 * t) + 10) + 1;
     }
-};
+}
 
 } // namespace
+
+namespace openspace::autonavigation::interpolator {
+
+} // namespace
+

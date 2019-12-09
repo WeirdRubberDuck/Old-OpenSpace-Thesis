@@ -22,10 +22,10 @@
  * OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                                         *
  ****************************************************************************************/
 
-#ifndef __OPENSPACE_MODULE___TRANSFERFUNCTIONS___H__
-#define __OPENSPACE_MODULE___TRANSFERFUNCTIONS___H__
+#ifndef __OPENSPACE_MODULE___EASINGFUNCTIONS___H__
+#define __OPENSPACE_MODULE___EASINGFUNCTIONS___H__
 
-namespace openspace::autonavigation::transferfunctions {
+namespace openspace::autonavigation::easingfunctions {
 
 // Based on functions from https://github.com/warrenm/AHEasing/blob/master/AHEasing/easing.c 
 
@@ -46,4 +46,8 @@ double quadraticEaseInOut(double t);
 double exponentialEaseInOut(double t);
 
 }
+
+namespace openspace::autonavigation::interpolator {
+
+} // namespace
 #endif

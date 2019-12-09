@@ -24,7 +24,7 @@
 
 #include <modules/autonavigation/autonavigationhandler.h>
 
-#include <modules/autonavigation/transferfunctions.h>
+#include <modules/autonavigation/helperfunctions.h>
 #include <openspace/engine/globals.h>
 #include <openspace/engine/windowdelegate.h>
 #include <openspace/interaction/navigationhandler.h>
@@ -93,7 +93,7 @@ void AutoNavigationHandler::updateCamera(double deltaTime) {
 
     // INTERPOLATE (TODO: make a function, and allow different methods)
     double t = (_currentTime - cps.startTime()) / cps.duration();
-    t = transferfunctions::cubicEaseInOut(t); // TEST
+    t = easingfunctions::cubicEaseInOut(t); // TEST
     t = std::max(0.0, std::min(t, 1.0));
 
     // TODO: don't set every frame
