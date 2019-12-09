@@ -25,6 +25,8 @@
 #ifndef __OPENSPACE_MODULE___EASINGFUNCTIONS___H__
 #define __OPENSPACE_MODULE___EASINGFUNCTIONS___H__
 
+#include <ghoul/glm.h>
+
 namespace openspace::autonavigation::easingfunctions {
 
 // Based on functions from https://github.com/warrenm/AHEasing/blob/master/AHEasing/easing.c 
@@ -48,6 +50,8 @@ double exponentialEaseInOut(double t);
 }
 
 namespace openspace::autonavigation::interpolator {
+
+    glm::dvec3 cubicBezier(double t, glm::dvec3 cp1, glm::dvec3 cp2, glm::dvec3 cp3, glm::dvec3 cp4);
 
 } // namespace
 #endif

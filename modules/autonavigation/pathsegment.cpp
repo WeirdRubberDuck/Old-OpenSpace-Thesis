@@ -24,6 +24,7 @@
 
 #include <modules/autonavigation/pathsegment.h>
 
+#include <modules/autonavigation/helperfunctions.h>
 #include <openspace/scene/scenegraphnode.h>
 #include <openspace/query/query.h>
 #include <ghoul/Misc/interpolator.h>
@@ -61,7 +62,8 @@ double PathSegment::startTime() const { return _startTime; }
 glm::vec3 PathSegment::getPositionAt(double t) {
     switch(_curveType) {
     case Bezier: 
-        return interpolateBezier(t); //TODO: use helper function when created
+        return interpolator::cubicBezier(t,
+            _controlPoints[0], _controlPoints[1], _controlPoints[2], _controlPoints[3]);
         break;
     case Linear:
         return ghoul::interpolateLinear(t, _start.position, _end.position);
@@ -75,7 +77,8 @@ glm::dquat PathSegment::getRotationAt(double t) {
     return glm::slerp(_start.rotation, _end.rotation, t);
 }
 
-//TODO: generate something that looks good! 
+// TODO: generate something that looks good! 
+// A single bezier segment with four control points
 void PathSegment::generateBezier() {
     glm::dvec3 startNodePos = sceneGraphNode(_start.referenceNode)->worldPosition();
     glm::dvec3 endNodePos = sceneGraphNode(_end.referenceNode)->worldPosition();
@@ -89,15 +92,6 @@ void PathSegment::generateBezier() {
     _controlPoints.push_back(_start.position + 10.0 * startDirection);
     _controlPoints.push_back(_end.position + 10.0 * endDirection);
     _controlPoints.push_back(_end.position);
-}
-
-// TODO: Create a more general helper function and use instead
-glm::dvec3 PathSegment::interpolateBezier(double t) { 
-    double a = 1.0 - t;
-    return _controlPoints[0] * a * a * a
-            + _controlPoints[1] * t * a * a * 3.0
-            + _controlPoints[2] * t * t * a * 3.0
-            + _controlPoints[3] * t * t * t;
 }
 
 } // namespace openspace::autonavigation

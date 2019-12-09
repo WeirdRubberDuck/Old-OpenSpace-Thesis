@@ -24,8 +24,6 @@
 
 #include <modules/autonavigation/helperfunctions.h>
 
-#include <ghoul/glm.h>
-
 namespace openspace::autonavigation::easingfunctions {
 
 double linear(double t) { return t; };
@@ -76,6 +74,15 @@ double exponentialEaseInOut(double t) {
 } // namespace
 
 namespace openspace::autonavigation::interpolator {
+   
+    // TODO: make into template function
+    glm::dvec3 cubicBezier(double t, glm::dvec3 cp1, glm::dvec3 cp2, glm::dvec3 cp3, glm::dvec3 cp4) {
+        double a = 1.0 - t;
+        return cp1 * a * a * a
+            + cp2 * t * a * a * 3.0
+            + cp3 * t * t * a * 3.0
+            + cp4 * t * t * t;
+    }
 
 } // namespace
 
