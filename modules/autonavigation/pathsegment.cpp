@@ -83,7 +83,6 @@ glm::dquat PathSegment::getRotationAt(double t) {
     return glm::slerp(_start.rotation, _end.rotation, t);
 }
 
-// TODO: generate something that looks good! 
 // A single bezier segment with four control points
 void PathSegment::generateBezier() {
     glm::dvec3 startNodePos = sceneGraphNode(_start.referenceNode)->worldPosition();
@@ -92,7 +91,6 @@ void PathSegment::generateBezier() {
     glm::dvec3 startDirection =_start.position - startNodePos; 
     glm::dvec3 endDirection = _end.position - endNodePos; 
 
-    // TODO: create better control points!
     _controlPoints.push_back(_start.position);
     _controlPoints.push_back(_start.position + 10.0 * startDirection);
     _controlPoints.push_back(_end.position + 10.0 * endDirection);

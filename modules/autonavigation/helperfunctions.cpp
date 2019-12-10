@@ -24,7 +24,6 @@
 
 #include <modules/autonavigation/helperfunctions.h>
 
-
 namespace openspace::autonavigation::easingfunctions {
 
 double linear(double t) { return t; };
@@ -87,17 +86,36 @@ namespace openspace::autonavigation::interpolator {
             + cp4 * t * t * t;
     }
 
+    glm::dvec3 piecewiseCubicBezier(double t, const std::vector<glm::dvec3> &controlPoints) {
+        size_t n = controlPoints.size();
+        ghoul_assert( n > 4, "Minimum of four control points needed for interpolation!");
+        
+        double n_seg = (n - 1)/3;
+        ghoul_assert( std::fmod(n_seg, 1) == 0, "Number of control points do not match number of segments!");
+        
+        // for control points equally spaced in time
+        double t_seg = std::fmod( t*n_seg, 1.0 );
+        t_seg = std::max(0.0, std::min(t_seg, 1.0));
+    
+        size_t idx = std::floor(t*n_seg);
+
+        return  cubicBezier(t, controlPoints[idx], controlPoints[idx+1], 
+                             controlPoints[idx+2], controlPoints[idx+3]);
+    }
+
     glm::dvec3 piecewiseLinear(double t, const std::vector<glm::dvec3> &controlPoints) {
         size_t n = controlPoints.size();
         ghoul_assert(n > 2, "Minimum of two control points needed for interpolation!");
 
-        // for nseg segments equally spaced in time
-        size_t nseg = n - 1;
-        size_t idx = std::floor( t*nseg );
-        double segment_t = std::fmod( t*nseg, 1.0 ); 
-        segment_t = std::max(0.0, std::min(segment_t, 1.0));
+        size_t n_seg = n - 1;
 
-        return  (1.0 - segment_t) * controlPoints[idx] + segment_t * controlPoints[idx + 1];
+        // for control points equally spaced in time
+        double t_seg = std::fmod( t*n_seg, 1.0 ); 
+        t_seg = std::max(0.0, std::min(t_seg, 1.0));
+
+        size_t idx = std::floor(t*n_seg);
+
+        return  (1.0 - t_seg) * controlPoints[idx] + t_seg * controlPoints[idx + 1];
     }
 
 } // namespace

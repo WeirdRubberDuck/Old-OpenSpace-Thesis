@@ -28,7 +28,6 @@
 #include <ghoul/glm.h>
 #include <vector>
 
-
 namespace openspace::autonavigation {
 
 struct CameraState {
@@ -47,7 +46,7 @@ enum CurveType {
 
 class PathSegment {
 public:
-    PathSegment(CameraState start, CameraState end, double duration, double startTime, CurveType type = Linear2);
+    PathSegment(CameraState start, CameraState end, double duration, double startTime, CurveType type = Bezier);
 
     CameraState start() const;
     CameraState end() const;
