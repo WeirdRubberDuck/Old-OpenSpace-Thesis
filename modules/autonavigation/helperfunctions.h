@@ -26,6 +26,10 @@
 #define __OPENSPACE_MODULE___EASINGFUNCTIONS___H__
 
 #include <ghoul/glm.h>
+#include <ghoul/misc/assert.h>
+#include <ghoul/logging/logmanager.h>
+#include <vector>
+#include <cmath>
 
 namespace openspace::autonavigation::easingfunctions {
 
@@ -49,9 +53,14 @@ double exponentialEaseInOut(double t);
 
 }
 
+// TODO: include interpolator.h to helperfunctions
+// error when interpolator.h is included and used both here and in pathsegment
 namespace openspace::autonavigation::interpolator {
 
-    glm::dvec3 cubicBezier(double t, glm::dvec3 cp1, glm::dvec3 cp2, glm::dvec3 cp3, glm::dvec3 cp4);
+    glm::dvec3 cubicBezier(double t, const glm::dvec3 &cp1, const glm::dvec3 &cp2, 
+                                     const glm::dvec3 &cp3, const glm::dvec3 &cp4);
+
+    glm::dvec3 piecewiseLinear(double t, const std::vector<glm::dvec3> &controlPoints);
 
 } // namespace
 #endif

@@ -24,6 +24,7 @@
 
 #include <modules/autonavigation/helperfunctions.h>
 
+
 namespace openspace::autonavigation::easingfunctions {
 
 double linear(double t) { return t; };
@@ -76,12 +77,27 @@ double exponentialEaseInOut(double t) {
 namespace openspace::autonavigation::interpolator {
    
     // TODO: make into template function
-    glm::dvec3 cubicBezier(double t, glm::dvec3 cp1, glm::dvec3 cp2, glm::dvec3 cp3, glm::dvec3 cp4) {
+    glm::dvec3 cubicBezier(double t, const glm::dvec3 &cp1, const glm::dvec3 &cp2,
+                                     const glm::dvec3 &cp3, const glm::dvec3 &cp4 )
+    {
         double a = 1.0 - t;
         return cp1 * a * a * a
             + cp2 * t * a * a * 3.0
             + cp3 * t * t * a * 3.0
             + cp4 * t * t * t;
+    }
+
+    glm::dvec3 piecewiseLinear(double t, const std::vector<glm::dvec3> &controlPoints) {
+        size_t n = controlPoints.size();
+        ghoul_assert(n > 2, "Minimum of two control points needed for interpolation!");
+
+        // for nseg segments equally spaced in time
+        size_t nseg = n - 1;
+        size_t idx = std::floor( t*nseg );
+        double segment_t = std::fmod( t*nseg, 1.0 ); 
+        segment_t = std::max(0.0, std::min(segment_t, 1.0));
+
+        return  (1.0 - segment_t) * controlPoints[idx] + segment_t * controlPoints[idx + 1];
     }
 
 } // namespace

@@ -46,6 +46,9 @@ PathSegment::PathSegment(
         break;
     case Linear:
         break;
+    case Linear2:
+        generateBezier(); 
+        break;
     default:
         LERROR(fmt::format("Cannot create curve of type {}. Type does not exist!", _curveType));
     }  
@@ -68,6 +71,9 @@ glm::vec3 PathSegment::getPositionAt(double t) {
     case Linear:
         return ghoul::interpolateLinear(t, _start.position, _end.position);
         break;
+    case Linear2:
+        return interpolator::piecewiseLinear(t, _controlPoints);
+        break;
     default:
         LERROR(fmt::format("Cannot get position for curve type {}. Type does not exist!", _curveType));
     }        
@@ -87,7 +93,6 @@ void PathSegment::generateBezier() {
     glm::dvec3 endDirection = _end.position - endNodePos; 
 
     // TODO: create better control points!
-    // Four control points for cubic bezier
     _controlPoints.push_back(_start.position);
     _controlPoints.push_back(_start.position + 10.0 * startDirection);
     _controlPoints.push_back(_end.position + 10.0 * endDirection);
