@@ -25,66 +25,29 @@
 #include <modules/autonavigation/pathspecification.h>
 
 #include <openspace/documentation/verifier.h>
+#include <ghoul/logging/logmanager.h>
 
 namespace {
     constexpr const char* _loggerCat = "PathInstruction";
 
     constexpr const char* KeyInstructions = "Instructions";
+
     constexpr const char* KeyTarget = "Target";
     constexpr const char* KeyDuration = "Duration";
     constexpr const char* KeyPosition = "Position";
     constexpr const char* KeyHeight = "Height";
+
+    constexpr const char* KeyNavigationState = "NavigationState";
 } // namespace
 
 namespace openspace::autonavigation {
 
-PathSpecification::Instruction::Instruction(const ghoul::Dictionary& dictionary) {
-    const bool hasTarget = dictionary.hasValue<std::string>(KeyTarget);
-    if (!hasTarget) {
-        throw ghoul::RuntimeError(
-            "A camera path instruction requires a target node, to go to or use as reference frame."
-        );
-    }
-
-    targetNode = dictionary.value<std::string>(KeyTarget);
-
-    if (dictionary.hasValue<double>(KeyDuration)) {
-        duration = dictionary.value<double>(KeyDuration);
-    } 
-
-    if (dictionary.hasValue<glm::dvec3>(KeyPosition)) {
-        position = dictionary.value<glm::dvec3>(KeyPosition);
-    }
-
-    if (dictionary.hasValue<double>(KeyHeight)) {
-        height = dictionary.value<double>(KeyHeight);
-    }
-}
-
-PathSpecification::Instruction::Instruction(std::string node, 
-    std::optional<double> duration,  std::optional<glm::dvec3> position, 
-    std::optional<double> height)
-    : targetNode(std::move(node))
-    , duration(duration)
-    , position(position)
-    , height(height)
-{}
-
-ghoul::Dictionary PathSpecification::Instruction::dictionary() const {
-    ghoul::Dictionary instructionDict;
-    instructionDict.setValue(KeyTarget, targetNode);
-    instructionDict.setValue(KeyDuration, duration);
-    instructionDict.setValue(KeyPosition, position);
-    instructionDict.setValue(KeyHeight, height);
-    return instructionDict;
-}
-
-documentation::Documentation PathSpecification::Instruction::Documentation() {
+documentation::Documentation TargetNodeInstructionDocumentation() {
     using namespace documentation;
 
     return {
-        "Path Instruction",
-        "camera_path_instruction",
+        "Target Node Instruction",
+        "target_node_instruction",
         {
             {
                 KeyTarget,
@@ -114,42 +77,115 @@ documentation::Documentation PathSpecification::Instruction::Documentation() {
     };
 }
 
-// ------------------------------------------------------------------------
+InstructionProps::InstructionProps(const ghoul::Dictionary& dictionary) {
+    // TODO: validate against some documentation?
 
-PathSpecification::PathSpecification(const ghoul::Dictionary& dictionary) {
-    ghoul::Dictionary instructions = dictionary.value<ghoul::Dictionary>(KeyInstructions); 
-
-    for (size_t i = 1; i <= instructions.size(); ++i) {
-        ghoul::Dictionary ins = instructions.value<ghoul::Dictionary>(std::to_string(i));
-        openspace::documentation::TestResult r = openspace::documentation::testSpecification(Instruction::Documentation(), ins);
-
-        if (!r.success) {
-            throw ghoul::RuntimeError(
-                "Could not read instruction number " + std::to_string(i) + "."
-            );
-        } 
-        else {
-            _instructions.push_back(Instruction(ins));
-        }
+    if (dictionary.hasValue<double>(KeyDuration)) {
+        duration = dictionary.value<double>(KeyDuration);
     }
 }
 
-PathSpecification::PathSpecification(const std::vector<Instruction> instructions)
-    : _instructions(instructions)
-{}
+TargetNodeInstructionProps::TargetNodeInstructionProps(
+    const ghoul::Dictionary& dictionary) : InstructionProps(dictionary)
+{
+    try {
+        documentation::testSpecificationAndThrow(
+            TargetNodeInstructionDocumentation(),
+            dictionary,
+            "Target Node Instruction"
+        );
+    }
+    catch (ghoul::RuntimeError& e) {
+        LERROR(fmt::format("Unable to generate target node instruction from dictionary. Does not match documentation: {}", e.message));
+        return;
+    }
+
+    if (!dictionary.hasValue<std::string>(KeyTarget)) {
+        throw ghoul::RuntimeError(
+            "A camera path instruction requires a target node, to go to or use as reference frame."
+        );
+    }
+
+    targetNode = dictionary.value<std::string>(KeyTarget);
+
+    if (dictionary.hasValue<glm::dvec3>(KeyPosition)) {
+        position = dictionary.value<glm::dvec3>(KeyPosition);
+    }
+
+    if (dictionary.hasValue<double>(KeyHeight)) {
+        height = dictionary.value<double>(KeyHeight);
+    }
+}
+
+NavigationStateInstructionProps::NavigationStateInstructionProps(
+    const ghoul::Dictionary& dictionary) : InstructionProps(dictionary)
+{
+    if (dictionary.hasValue<ghoul::Dictionary>(KeyNavigationState)) {
+        auto navStateDict = dictionary.value<ghoul::Dictionary>(KeyNavigationState);
+
+        try {
+            openspace::documentation::testSpecificationAndThrow(
+                NavigationState::Documentation(),
+                navStateDict,
+                "NavigationState"
+            );
+        }
+        catch (ghoul::RuntimeError& e) {
+            LERROR(fmt::format("Unable to generate navigation state instruction from dictionary. Does not match documentation: {}", e.message));
+            return;
+        }
+
+        navState = NavigationState(navStateDict);
+    }
+}
+
+Instruction::Instruction(const ghoul::Dictionary& dictionary) {
+
+    // TODO: test against some documentation?
+
+    if (dictionary.hasValue<std::string>(KeyTarget)) {
+        type = InstructionType::TargetNode;
+        props = std::make_shared<TargetNodeInstructionProps>(dictionary);
+    }
+    else if (dictionary.hasValue<ghoul::Dictionary>(KeyNavigationState)) {
+        type = InstructionType::NavigationState;
+        props = std::make_shared<NavigationStateInstructionProps>(dictionary);
+    }
+    else {
+        throw ghoul::RuntimeError(
+            "Could not deduce instruction type."
+        );
+    }
+}
+
+PathSpecification::PathSpecification(const ghoul::Dictionary& dictionary) {
+    try {
+        documentation::testSpecificationAndThrow(
+            Documentation(),
+            dictionary,
+            "Path Specification"
+        );
+    }
+    catch (ghoul::RuntimeError& e) {
+        LERROR(fmt::format("Unable to generate path specification from dictionary. Does not match documentation: {}", e.message));
+        return;
+    }
+
+    ghoul::Dictionary instructions = dictionary.value<ghoul::Dictionary>(KeyInstructions); 
+
+    for (size_t i = 1; i <= instructions.size(); ++i) {
+        ghoul::Dictionary insDict = instructions.value<ghoul::Dictionary>(std::to_string(i));
+
+        _instructions.push_back(Instruction{ insDict });
+    }
+}
 
 PathSpecification::PathSpecification(const Instruction instruction) {
     _instructions.push_back(instruction);
 }
 
-const std::vector<PathSpecification::Instruction>& PathSpecification::instructions() const {
-    return _instructions;
-}
-
-ghoul::Dictionary PathSpecification::dictionary() const {
-    ghoul::Dictionary dict;
-    dict.setValue(KeyInstructions, _instructions);
-    return dict;
+const std::vector<Instruction>* PathSpecification::instructions() const {
+    return &_instructions;
 }
 
 documentation::Documentation PathSpecification::Documentation() {

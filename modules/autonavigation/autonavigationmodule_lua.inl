@@ -50,19 +50,19 @@ namespace openspace::autonavigation::luascriptfunctions {
             return ghoul::lua::luaError(L, "Unknown node name: " + nodeIdentifier);
         }
 
-        PathSpecification::Instruction ins;
+        ghoul::Dictionary insDict;
+        insDict.setValue("Target", nodeIdentifier);
+
         if (nArguments > 1) {
             double duration = ghoul::lua::value<double>(L, 2);
             if (duration <= EPSILON) {
                 lua_settop(L, 0);
                 return ghoul::lua::luaError(L, "Duration must be larger than zero.");
             }
-            ins = PathSpecification::Instruction{ nodeIdentifier, duration };
+            insDict.setValue("Duration", duration);
         }
-        else {
-            ins = PathSpecification::Instruction{ nodeIdentifier };
-        }
-        PathSpecification spec = PathSpecification(ins);
+
+        PathSpecification spec = PathSpecification(Instruction{insDict});
 
         AutoNavigationModule* module = global::moduleEngine.module<AutoNavigationModule>(); 
         AutoNavigationHandler& handler = module->AutoNavigationHandler();
@@ -80,7 +80,7 @@ namespace openspace::autonavigation::luascriptfunctions {
         ghoul::lua::luaDictionaryFromState(L, dictionary);
         PathSpecification spec(dictionary);
 
-        if (spec.instructions().empty()) {
+        if (spec.instructions()->empty()) {
             lua_settop(L, 0);
             return ghoul::lua::luaError(
                 L, fmt::format("No instructions for camera path generation were provided.")
@@ -131,7 +131,7 @@ namespace openspace::autonavigation::luascriptfunctions {
 
         PathSpecification spec(dictionary);
 
-        if (spec.instructions().empty()) {
+        if (spec.instructions()->empty()) {
             return ghoul::lua::luaError(
                 L, fmt::format("No instructions for camera path generation were provided.")
             );

@@ -69,7 +69,9 @@ public:
 private:
     CameraState getStartState();
 
-    bool readTargetNodeInstruction(PathSpecification::Instruction& instruction, int index);
+    bool handleInstruction(const Instruction& instruction, int index);
+    bool endFromTargetNodeInstruction(CameraState& endState, CameraState& prevState, const Instruction& instruction, int index);
+    bool endFromNavigationStateInstruction(CameraState& endState, const Instruction& instruction, int index);
 
     std::vector<PathSegment> _pathSegments;
 

@@ -26,41 +26,57 @@
 #define __OPENSPACE_MODULE___PATHINSTRUCTION___H__
 
 #include <openspace/documentation/documentation.h>
+#include <openspace/interaction/navigationhandler.h>
 #include <ghoul/glm.h>
 #include <optional>
 
 namespace openspace::autonavigation {
 
+enum InstructionType { TargetNode, NavigationState };
+
+struct InstructionProps {
+    InstructionProps() = default;
+    InstructionProps(const ghoul::Dictionary& dictionary);
+    virtual ~InstructionProps() {} // abstract
+
+    std::optional<double> duration;
+};
+
+struct TargetNodeInstructionProps : public InstructionProps {
+    TargetNodeInstructionProps(const ghoul::Dictionary& dictionary);
+
+    std::string targetNode;
+    std::optional<glm::dvec3> position; // relative to target node (model space)
+    std::optional<double> height;
+};
+
+struct NavigationStateInstructionProps : public InstructionProps {
+    using NavigationState = interaction::NavigationHandler::NavigationState;
+
+    NavigationStateInstructionProps(const ghoul::Dictionary& dictionary);
+
+    NavigationState navState;
+};
+
+struct Instruction {
+    Instruction() = default;
+    Instruction(const ghoul::Dictionary& dictionary);
+
+    InstructionType type;
+    std::shared_ptr<InstructionProps> props;
+};
+
 class PathSpecification {
 
 public:
-    struct Instruction {
-        Instruction() = default;
-        Instruction(const ghoul::Dictionary& dictionary);
-        Instruction(std::string node, 
-            std::optional<double> duration = std::nullopt,
-            std::optional<glm::dvec3> position = std::nullopt, 
-            std::optional<double> height = std::nullopt);
-
-        ghoul::Dictionary dictionary() const;
-        static documentation::Documentation Documentation();
-
-        std::string targetNode;
-        std::optional<double> duration;
-        std::optional<glm::dvec3> position; // relative to target node (model space)
-        std::optional<double> height;
-    };
-
     PathSpecification() = default;
     PathSpecification(const ghoul::Dictionary& dictionary);
-    PathSpecification(const std::vector<Instruction> instructions);
     PathSpecification(const Instruction instruction);
 
-    ghoul::Dictionary dictionary() const;
     static documentation::Documentation Documentation();
 
     // Accessors
-    const std::vector<Instruction>& instructions() const;
+    const std::vector<Instruction>* instructions() const;
 
 private:
     std::vector<Instruction> _instructions;
@@ -69,4 +85,4 @@ private:
 
 } // namespace openspace::autonavigation
 
-#endif // __OPENSPACE_CORE___NAVIGATIONHANDLER___H__
+#endif // __OPENSPACE_MODULE___NAVIGATIONHANDLER___H__
