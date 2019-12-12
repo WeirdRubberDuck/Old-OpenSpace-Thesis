@@ -91,9 +91,8 @@ void AutoNavigationHandler::updateCamera(double deltaTime) {
 
     PathSegment cps = currentPathSegment(); 
 
-    // INTERPOLATE (TODO: make a function, and allow different methods)
+    // Interpolation variable
     double t = (_currentTime - cps.startTime()) / cps.duration();
-    t = easingfunctions::cubicEaseInOut(t); // TEST
     t = std::max(0.0, std::min(t, 1.0));
 
     // TODO: don't set every frame
@@ -102,9 +101,8 @@ void AutoNavigationHandler::updateCamera(double deltaTime) {
     CameraState cs = (t < 0.5) ? cps.start() : cps.end();
     global::navigationHandler.orbitalNavigator().setAnchorNode(cs.referenceNode);
 
-    // TODO: add different ways to interpolate and separate transfer functions for pos and rot
     glm::dvec3 cameraPosition = cps.getPositionAt(t);
-    glm::dquat cameraRotation = cps.getRotationAt(t);
+    glm::dquat cameraRotation = cps.getRotationAt(t, cameraPosition, camera()->lookUpVectorWorldSpace());
 
     camera()->setPositionVec3(cameraPosition); 
     camera()->setRotation(cameraRotation);
