@@ -25,8 +25,11 @@
 #include <modules/autonavigation/pathsegment.h>
 
 #include <modules/autonavigation/helperfunctions.h>
-#include <openspace/scene/scenegraphnode.h>
+#include <openspace/engine/globals.h>
+#include <openspace/interaction/navigationhandler.h>
 #include <openspace/query/query.h>
+#include <openspace/scene/scenegraphnode.h>
+#include <openspace/util/camera.h>
 #include <ghoul/Misc/interpolator.h>
 #include <ghoul/logging/logmanager.h>
 
@@ -43,9 +46,6 @@ PathSegment::PathSegment(
     switch(_curveType) {
     case Bezier:
         generateBezier();
-        break;
-    case Bezier2:
-        generateBezier2();
         break;
     case Linear:
         break;
@@ -73,9 +73,6 @@ glm::vec3 PathSegment::getPositionAt(double t) {
         return interpolator::cubicBezier(t,
             _controlPoints[0], _controlPoints[1], _controlPoints[2], _controlPoints[3]);
         break;
-    case Bezier2:
-        return interpolator::piecewiseCubicBezier(t, _controlPoints);
-        break;
     case Linear:
         return ghoul::interpolateLinear(t, _start.position, _end.position);
         break;
@@ -87,13 +84,16 @@ glm::vec3 PathSegment::getPositionAt(double t) {
     }        
 }
 
-glm::dquat PathSegment::getRotationAt(double t, glm::dvec3 eyePos, glm::dvec3 up) {
+glm::dquat PathSegment::getRotationAt(double t) {
     t = easingfunctions::cubicEaseInOut(t);
 
     switch (_curveType) {
     case Linear2:
-    case Bezier2:
-        return getLookAtRotation(t, eyePos, up);
+        return getLookAtRotation(
+            t, 
+            getPositionAt(t), 
+            global::navigationHandler.camera()->lookUpVectorWorldSpace()
+        );
         break;
     default:
         return glm::slerp(_start.rotation, _end.rotation, t);
@@ -125,34 +125,6 @@ void PathSegment::generateBezier() {
     _controlPoints.push_back(_start.position);
     _controlPoints.push_back(_start.position + 10.0 * startDirection);
     _controlPoints.push_back(_end.position + 10.0 * endDirection);
-    _controlPoints.push_back(_end.position);
-}
-
-void PathSegment::generateBezier2() {
-    // START: 
-    glm::dvec3 startNodePos = sceneGraphNode(_start.referenceNode)->worldPosition();
-    glm::dvec3 startDirection = _start.position - startNodePos;   
-
-    // END:   
-    glm::dvec3 endNodePos = sceneGraphNode(_end.referenceNode)->worldPosition();
-    glm::dvec3 endDirection = _end.position - endNodePos;
-
-    // MIDDLE: one knot and two control points parallell to target nodes
-    glm::dvec3 AB = endNodePos - startNodePos;
-    glm::dvec3 C = normalize(startDirection + endDirection);
-    glm::dvec3 CparAB = glm::dot(C, normalize(AB))* normalize(AB);
-    glm::dvec3 CortAB = normalize(C - CparAB);
-    double d = length(AB);
-    
-    // TODO: set points that actually look good
-    _controlPoints.push_back(_start.position);
-    _controlPoints.push_back(_start.position + 2.0 * startDirection);
-
-    _controlPoints.push_back(_start.position + d * CortAB);
-    _controlPoints.push_back(_start.position + 1.5* d * CortAB + 0.5 * AB);
-    _controlPoints.push_back(_end.position + d * CortAB);
-
-    _controlPoints.push_back(_end.position + 2.0 * endDirection);
     _controlPoints.push_back(_end.position);
 }
 

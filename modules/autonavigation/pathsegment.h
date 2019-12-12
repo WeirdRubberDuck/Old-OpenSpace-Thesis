@@ -38,16 +38,13 @@ struct CameraState {
 
 enum CurveType {
     Bezier, 
-    Bezier2,
     Linear,
     Linear2
 };
 
-// TODO: another enum for orientation interpolation options
-
 class PathSegment {
 public:
-    PathSegment(CameraState start, CameraState end, double duration, double startTime, CurveType type = Linear2);
+    PathSegment(CameraState start, CameraState end, double duration, double startTime, CurveType type = Bezier);
 
     CameraState start() const;
     CameraState end() const;
@@ -55,12 +52,11 @@ public:
     double startTime() const;
 
     glm::vec3 getPositionAt(double t);
-    glm::dquat getRotationAt(double t, glm::dvec3 eyePos, glm::dvec3 up);
+    glm::dquat getRotationAt(double t);
     glm::dquat getLookAtRotation(double t, glm::dvec3 currentPos, glm::dvec3 up);
 
 private: 
     void generateBezier();
-    void generateBezier2();
     void generateLinear2();
 
     CameraState _start;

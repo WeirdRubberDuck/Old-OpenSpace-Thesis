@@ -102,7 +102,7 @@ void AutoNavigationHandler::updateCamera(double deltaTime) {
     global::navigationHandler.orbitalNavigator().setAnchorNode(cs.referenceNode);
 
     glm::dvec3 cameraPosition = cps.getPositionAt(t);
-    glm::dquat cameraRotation = cps.getRotationAt(t, cameraPosition, camera()->lookUpVectorWorldSpace());
+    glm::dquat cameraRotation = cps.getRotationAt(t);
 
     camera()->setPositionVec3(cameraPosition); 
     camera()->setRotation(cameraRotation);
