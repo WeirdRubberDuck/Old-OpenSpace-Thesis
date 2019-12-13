@@ -85,29 +85,29 @@ glm::vec3 PathSegment::getPositionAt(double t) {
 }
 
 glm::dquat PathSegment::getRotationAt(double t) {
-    t = easingfunctions::cubicEaseInOut(t);
+    double tEase = easingfunctions::cubicEaseInOut(t);
 
     switch (_curveType) {
     case Linear2:
         return getLookAtRotation(
-            t, 
+            tEase, 
             getPositionAt(t), 
             global::navigationHandler.camera()->lookUpVectorWorldSpace()
         );
         break;
     default:
-        return glm::slerp(_start.rotation, _end.rotation, t);
+        return glm::slerp(_start.rotation, _end.rotation, tEase);
     }
 }
 
-glm::dquat PathSegment::getLookAtRotation(double t, glm::dvec3 eyePos, glm::dvec3 up) {
+glm::dquat PathSegment::getLookAtRotation(double t, glm::dvec3 currentPos, glm::dvec3 up) {
     glm::dvec3 startLookAtPos = sceneGraphNode(_start.referenceNode)->worldPosition();
     glm::dvec3 endLookAtPos = sceneGraphNode(_end.referenceNode)->worldPosition();
     glm::dvec3 lookAtPos = ghoul::interpolateLinear(t, startLookAtPos, endLookAtPos);
 
     glm::dmat4 lookAtMat = glm::lookAt(
-        eyePos,
-        lookAtPos,
+        currentPos,
+        lookAtPos, 
         up
     );
 
