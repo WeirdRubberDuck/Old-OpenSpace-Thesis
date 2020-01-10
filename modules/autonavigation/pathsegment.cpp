@@ -47,6 +47,9 @@ PathSegment::PathSegment(
     case Bezier:
         generateBezier();
         break;
+    case Bezier2:
+        generateBezier2();
+        break;
     case Linear:
         break;
     case Linear2:
@@ -72,6 +75,9 @@ glm::vec3 PathSegment::getPositionAt(double t) {
     case Bezier: 
         return interpolator::cubicBezier(t,
             _controlPoints[0], _controlPoints[1], _controlPoints[2], _controlPoints[3]);
+        break;
+    case Bezier2:
+        return interpolator::piecewiseCubicBezier(t, _controlPoints);
         break;
     case Linear:
         return ghoul::interpolateLinear(t, _start.position, _end.position);
@@ -126,6 +132,34 @@ void PathSegment::generateBezier() {
     _controlPoints.push_back(_start.position);
     _controlPoints.push_back(_start.position + 10.0 * startDirection);
     _controlPoints.push_back(_end.position + 10.0 * endDirection);
+    _controlPoints.push_back(_end.position);
+}
+
+void PathSegment::generateBezier2() {
+    // START: 
+    glm::dvec3 startNodePos = sceneGraphNode(_start.referenceNode)->worldPosition();
+    glm::dvec3 startDirection = _start.position - startNodePos;
+
+    // END:   
+    glm::dvec3 endNodePos = sceneGraphNode(_end.referenceNode)->worldPosition();
+    glm::dvec3 endDirection = _end.position - endNodePos;
+
+    // MIDDLE: one knot and two control points parallell to target nodes
+    glm::dvec3 AB = endNodePos - startNodePos;
+    glm::dvec3 C = normalize(startDirection + endDirection);
+    glm::dvec3 CparAB = glm::dot(C, normalize(AB))* normalize(AB);
+    glm::dvec3 CortAB = normalize(C - CparAB);
+    double d = length(AB);
+
+    // TODO: set points that actually look good
+    _controlPoints.push_back(_start.position);
+    _controlPoints.push_back(_start.position + 2.0 * startDirection);
+
+    _controlPoints.push_back(_start.position + 1.5 * d * CortAB);
+    _controlPoints.push_back(_start.position + 1.5 * d * CortAB + 0.5 * AB);
+    _controlPoints.push_back(_end.position + 1.5 * d * CortAB);
+
+    _controlPoints.push_back(_end.position + 2.0 * endDirection);
     _controlPoints.push_back(_end.position);
 }
 

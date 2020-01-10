@@ -38,6 +38,7 @@ struct CameraState {
 
 enum CurveType {
     Bezier, 
+    Bezier2,
     Linear,
     Linear2
 };
@@ -57,6 +58,7 @@ public:
 
 private: 
     void generateBezier();
+    void generateBezier2();
     void generateLinear2();
 
     CameraState _start;

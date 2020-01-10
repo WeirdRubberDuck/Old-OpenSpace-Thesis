@@ -98,6 +98,23 @@ namespace openspace::autonavigation::interpolator {
             + cp4 * t * t * t;
     }
 
+    glm::dvec3 piecewiseCubicBezier(double t, const std::vector<glm::dvec3> &controlPoints) {
+        size_t n = controlPoints.size();
+        ghoul_assert(n > 4, "Minimum of four control points needed for interpolation!");
+
+        double n_seg = (n - 1.0) / 3.0;
+        ghoul_assert(std::fmod(n_seg, 1.0) == 0, "A vector containing 3n + 1 control points must be provided!");
+
+        // for control points equally spaced in time
+        double t_seg = std::fmod(t * n_seg, 1.0);
+        t_seg = std::max(0.0, std::min(t_seg, 1.0));
+
+        size_t idx = std::floor(t * n_seg) * 3;
+
+        return  cubicBezier(t_seg, controlPoints[idx], controlPoints[idx + 1],
+            controlPoints[idx + 2], controlPoints[idx + 3]);
+    }
+
     glm::dvec3 piecewiseLinear(double t, const std::vector<glm::dvec3> &controlPoints) {
         size_t n = controlPoints.size();
         ghoul_assert(n > 2, "Minimum of two control points needed for interpolation!");
