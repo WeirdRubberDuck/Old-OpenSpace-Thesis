@@ -85,18 +85,19 @@ glm::vec3 PathSegment::getPositionAt(double t) {
 }
 
 glm::dquat PathSegment::getRotationAt(double t) {
-    double tEase = easingfunctions::cubicEaseInOut(t);
+    double tRot = helpers::shiftAndScale(t, 0.1, 0.9);
+    tRot = easingfunctions::cubicEaseInOut(tRot);
 
     switch (_curveType) {
     case Linear2:
         return getLookAtRotation(
-            tEase, 
+            tRot, 
             getPositionAt(t), 
             global::navigationHandler.camera()->lookUpVectorWorldSpace()
         );
         break;
     default:
-        return glm::slerp(_start.rotation, _end.rotation, tEase);
+        return glm::slerp(_start.rotation, _end.rotation, tRot);
     }
 }
 

@@ -24,6 +24,18 @@
 
 #include <modules/autonavigation/helperfunctions.h>
 
+namespace openspace::autonavigation::helpers {
+
+    // Shift and scale to a subinterval [start,end]
+    double shiftAndScale(double t, double start, double end) { 
+        ghoul_assert(0.0 < start && start < end  && end < 1.0, 
+            "Values must be 0.0 < start < end < 1.0!");
+        double tScaled = t / (end - start) - start;
+        return std::max(0.0, std::min(tScaled, 1.0));
+    }
+
+} // helpers
+
 namespace openspace::autonavigation::easingfunctions {
 
 double linear(double t) { return t; };
@@ -71,7 +83,7 @@ double exponentialEaseInOut(double t) {
     }
 }
 
-} // namespace
+} // easingfunctions
 
 namespace openspace::autonavigation::interpolator {
    
@@ -101,5 +113,5 @@ namespace openspace::autonavigation::interpolator {
         return  (1.0 - t_seg) * controlPoints[idx] + t_seg * controlPoints[idx + 1];
     }
 
-} // namespace
+} // interpolator
 

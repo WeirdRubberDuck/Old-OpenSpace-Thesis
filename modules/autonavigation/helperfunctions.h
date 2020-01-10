@@ -31,6 +31,13 @@
 #include <vector>
 #include <cmath>
 
+namespace openspace::autonavigation::helpers {
+
+    // Make interpolator parameter t [0,1] progress only inside a subinterval
+    double shiftAndScale(double t, double newStart, double newEnd);
+
+} // helpers
+
 namespace openspace::autonavigation::easingfunctions {
 
 // Based on functions from https://github.com/warrenm/AHEasing/blob/master/AHEasing/easing.c 
